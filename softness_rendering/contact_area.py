@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     # if if_use_simulator == 'y':
     #     print('Use simulator')
-    #     link = Simulator().port(50632).build()
+    #     link = Simulator().build()
     # elif if_use_simulator == 'n':
     #     print('Use AUTD device')
     #     link = SOEM().high_precision(True).build()
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     link = SOEM().high_precision(True).build()
 
     if not autd.open(link):
-        print(Controller.last_error())
+        print('Failed to open Controller')
         exit()
 
     autd.check_trials = 50

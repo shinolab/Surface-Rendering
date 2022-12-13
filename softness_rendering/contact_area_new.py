@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-08 17:48:30
+LastEditTime: 2022-12-13 16:59:07
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -56,7 +56,7 @@ def run(autd: Controller):
             time_step = (1 / stm_f) / size  # recalculate time step
             # toc = time.time()
             # print(toc-tic)
-            time.sleep(time_step)
+            time.sleep(time_step)   # 精度不足
 
     except KeyboardInterrupt:
         pass
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # if if_use_simulator == 'y':
     #     print('Use simulator')
-    #     link = Simulator().port(50632).build()
+    #     link = Simulator().build()
     # elif if_use_simulator == 'n':
     #     print('Use AUTD device')
     #     link = SOEM().high_precision(True).build()
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     link = SOEM().high_precision(True).build()
 
     if not autd.open(link):
-        print(Controller.last_error())
+        print('Failed to open Controller')
         exit()
 
     autd.check_trials = 50

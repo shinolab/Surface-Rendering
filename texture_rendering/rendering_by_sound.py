@@ -72,7 +72,7 @@ if __name__ == '__main__':
         exit()
 
     if not autd.open(link):
-        print(Controller.last_error())
+        print('Failed to open Controller')
         exit()
 
     autd.check_trials = 50

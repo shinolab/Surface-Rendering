@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-10 16:50:39
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-08 17:48:20
+LastEditTime: 2022-12-13 15:56:21
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     if if_use_simulator == 'y':
         print('Use simulator')
-        link = Simulator().port(50632).build()
+        link = Simulator().build()
     elif if_use_simulator == 'n':
         print('Use AUTD device')
         link = SOEM().high_precision(True).build()
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         exit()
 
     if not autd.open(link):
-        print(Controller.last_error())
+        print('Failed to open Controller')
         exit()
 
     autd.check_trials = 50
