@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-17 00:39:19
+LastEditTime: 2022-12-17 02:20:48
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,11 +13,15 @@ from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop
 from pyautd3.modulation import Static
 import numpy as np
 import time
-import ctypes
+# import ctypes
 
 # use function from cpp to get accurate usleep
-libc = ctypes.CDLL("/usr/lib/libc.dylib")   # for mac os
+# libc = ctypes.CDLL("/usr/lib/libc.dylib")   # for mac os
 # libc = ctypes.CDLL("/usr/lib/libc.so.6")  # for ubuntu
+
+# It is not necessary to use ctypes because time.sleep() also has a higher accuracy on Mac OS compared with Win.
+# This may be due to the system time accuracy.
+# But errors in the sleep time are still present and unavoidable.
 
 def run(autd: Controller):
     autd.send(Clear())
@@ -28,8 +32,6 @@ def run(autd: Controller):
     for firm in firm_info_list:
         print(firm)
     print('============================================================================================')
-
-    # r_list = np.arange(1.5, 4.0, 0.1)
 
     center = autd.geometry.center + np.array([0., 0., 150.])
     m = Static(1.0)
@@ -61,7 +63,8 @@ def run(autd: Controller):
             time_step = (1 / stm_f) / size  # recalculate time step
             # toc = time.time()
             # print(toc-tic)
-            libc.usleep(time_step * 1e6)
+            # libc.usleep(time_step * 1e6)
+            time.sleep(time_step)
 
     except KeyboardInterrupt:
         pass
