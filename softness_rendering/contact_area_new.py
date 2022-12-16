@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-13 16:59:07
+LastEditTime: 2022-12-16 15:22:53
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,6 +13,9 @@ from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop
 from pyautd3.modulation import Static
 import numpy as np
 import time
+import ctypes
+
+libc = ctypes.CDLL('msvcrt.dll')
 
 def run(autd: Controller):
     autd.send(Clear())
@@ -56,7 +59,8 @@ def run(autd: Controller):
             time_step = (1 / stm_f) / size  # recalculate time step
             # toc = time.time()
             # print(toc-tic)
-            time.sleep(time_step)   # 精度不足
+            # time.sleep(time_step)   # 精度不足
+            libc.usleep(time_step * 1e6)
 
     except KeyboardInterrupt:
         pass
