@@ -1,8 +1,8 @@
 '''
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
-LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-16 15:22:53
+LastEditors: error: git config user.name & please set dead value or install git
+LastEditTime: 2022-12-17 00:18:17
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -15,7 +15,9 @@ import numpy as np
 import time
 import ctypes
 
-libc = ctypes.CDLL('msvcrt.dll')
+# use function from cpp to get accurate usleep
+libc = ctypes.CDLL("/usr/lib/libc.dylib")   # for mac os
+# libc = ctypes.CDLL("/usr/lib/libc.so.6")  # for ubuntu
 
 def run(autd: Controller):
     autd.send(Clear())
@@ -59,7 +61,6 @@ def run(autd: Controller):
             time_step = (1 / stm_f) / size  # recalculate time step
             # toc = time.time()
             # print(toc-tic)
-            # time.sleep(time_step)   # 精度不足
             libc.usleep(time_step * 1e6)
 
     except KeyboardInterrupt:
@@ -78,16 +79,16 @@ if __name__ == '__main__':
 
     if_use_simulator = input('If use simulator? [y: simulator] or [n: AUTD]: ')
 
-    # if if_use_simulator == 'y':
-    #     print('Use simulator')
-    #     link = Simulator().build()
-    # elif if_use_simulator == 'n':
-    #     print('Use AUTD device')
-    #     link = SOEM().high_precision(True).build()
-    # else:
-    #     exit()
+    if if_use_simulator == 'y':
+        print('Use simulator')
+        link = Simulator().build()
+    elif if_use_simulator == 'n':
+        print('Use AUTD device')
+        link = SOEM().high_precision(True).build()
+    else:
+        exit()
     
-    link = SOEM().high_precision(True).build()
+    # link = SOEM().high_precision(True).build()
 
     if not autd.open(link):
         print('Failed to open Controller')
