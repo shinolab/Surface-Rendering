@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-17 02:20:48
+LastEditTime: 2022-12-18 13:37:54
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -46,13 +46,13 @@ def run(autd: Controller):
 
     try:
         while True:
-            # tic = time.time()
             # update the focus information
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
             f = Focus(center + p)
             autd.send(m, f)
 
             # ... change the radius and height here
+            # example
             if radius < 6.0:
                 radius += 0.005
             else:
@@ -61,9 +61,7 @@ def run(autd: Controller):
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
             time_step = (1 / stm_f) / size  # recalculate time step
-            # toc = time.time()
-            # print(toc-tic)
-            # libc.usleep(time_step * 1e6)
+            # libc.usleep(time_step * 1e6)  # function sleep for us from ctypes
             time.sleep(time_step)
 
     except KeyboardInterrupt:
