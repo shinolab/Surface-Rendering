@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-18 13:37:54
+LastEditTime: 2022-12-19 16:00:14
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -37,7 +37,7 @@ def run(autd: Controller):
     m = Static(1.0)
     radius = 1.0    # radius of STM
     step = 0.2      # step length (mm)
-    stm_f = 20.0     # frequency of STM
+    stm_f = 5.0     # frequency of STM
     theta = 0
     config = SilencerConfig.none()
     autd.send(config)
