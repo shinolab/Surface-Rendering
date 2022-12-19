@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-18 13:37:54
+LastEditTime: 2022-12-19 17:11:07
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,15 +13,14 @@ from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop
 from pyautd3.modulation import Static
 import numpy as np
 import time
-# import ctypes
+import ctypes
+import platform
+import os
 
-# use function from cpp to get accurate usleep
-# libc = ctypes.CDLL("/usr/lib/libc.dylib")   # for mac os
-# libc = ctypes.CDLL("/usr/lib/libc.so.6")  # for ubuntu
+# use cpp to get high precision sleep time
+dll = ctypes.cdll.LoadLibrary
+libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
 
-# It is not necessary to use ctypes because time.sleep() also has a higher accuracy on Mac OS compared with Win.
-# This may be due to the system time accuracy.
-# But errors in the sleep time are still present and unavoidable.
 
 def run(autd: Controller):
     autd.send(Clear())
@@ -61,8 +60,10 @@ def run(autd: Controller):
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
             time_step = (1 / stm_f) / size  # recalculate time step
-            # libc.usleep(time_step * 1e6)  # function sleep for us from ctypes
-            time.sleep(time_step)
+            tic = time.time()
+            libc.HighPrecisionTimer.HighPrecisionSleep(time_step)  # cpp sleep function
+            print(time.time()-tic)
+            print(time_step)
 
     except KeyboardInterrupt:
         pass
