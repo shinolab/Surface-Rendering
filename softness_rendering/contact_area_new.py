@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-19 19:04:57
+LastEditTime: 2022-12-20 15:04:57
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -12,7 +12,6 @@ from pyautd3.gain import Focus
 from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop
 from pyautd3.modulation import Static
 import numpy as np
-import time
 import ctypes
 import platform
 import os
