@@ -2,11 +2,11 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-03 14:21:15
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-08 17:48:59
+LastEditTime: 2022-12-21 17:09:11
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
-from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop
+from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.link import SOEM
 from pyautd3.link import Simulator
 import surface_sound
@@ -58,7 +58,17 @@ def run(autd: Controller):
 if __name__ == '__main__':
     autd = Controller()
 
-    autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
+    # Multiple AUTD
+    num_autd = input('Choose the number of using AUTD: ')
+    if num_autd == '4':
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+    elif num_autd == '1':
+        autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
+    else:
+        exit()
 
     if_use_simulator = input('If use simulator? [y: simulator] or [n: AUTD]: ')
 
