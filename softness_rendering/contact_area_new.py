@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-20 15:04:57
+LastEditTime: 2022-12-21 17:06:37
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -73,6 +73,7 @@ def run(autd: Controller):
 if __name__ == '__main__':
     autd = Controller()
 
+    # Multiple AUTD
     autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
 
     if_use_simulator = input('If use simulator? [y: simulator] or [n: AUTD]: ')
