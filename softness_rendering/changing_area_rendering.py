@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2022-12-21 17:08:29
+LastEditTime: 2022-12-21 22:49:21
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -42,6 +42,9 @@ def run(autd: Controller):
 
     print('press ctrl+c to finish...')
 
+    radius_list = np.concatenate([np.linspace(1.0, 6.0, 1000), np.linspace(6.0, 1.0, 1000)])
+    i = 0
+
     try:
         while True:
             # update the focus information
@@ -51,10 +54,8 @@ def run(autd: Controller):
 
             # ... change the radius and height here
             # example
-            if radius < 6.0:
-                radius += 0.005
-            else:
-                radius = 1.0
+            radius = radius_list[i % 2000]
+            i += 1
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
