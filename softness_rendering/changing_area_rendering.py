@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-01-12 12:09:22
+LastEditTime: 2023-01-12 13:28:32
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -10,7 +10,7 @@ from pyautd3.link import SOEM
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
 from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
-from pyautd3.modulation import Static
+from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
 import platform
@@ -32,7 +32,8 @@ def run(autd: Controller):
     print('============================================================================================')
 
     center = autd.geometry.center + np.array([0., 0., 150.])
-    m = Static(1.0)
+    # m = Static(1.0)
+    m = Sine(150)
     radius = 1.0    # radius of STM
     step = 0.2      # step length (mm)
     stm_f = 5.0     # frequency of STM

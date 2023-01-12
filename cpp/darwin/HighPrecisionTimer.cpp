@@ -2,7 +2,7 @@
  * @Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
  * @Date: 2022-12-19 16:32:53
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2022-12-20 02:59:02
+ * @LastEditTime: 2023-01-12 13:29:51
  * Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
  */
 
@@ -22,8 +22,7 @@ float HighPrecisionTimer::HighPrecisionSleep(float deltaTime)
     gettimeofday(&start, NULL);
     while (elapsedTime < deltaTime * 1e6) {
         gettimeofday(&end, NULL);
-        elapsedTime = (double)(end.tv_usec - start.tv_usec);
-        if (elapsedTime < 0) break;
+        elapsedTime = (double)(1000 * 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
     }
     return elapsedTime;
 }
