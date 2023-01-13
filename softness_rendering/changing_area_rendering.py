@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-01-13 18:04:38
+LastEditTime: 2023-01-13 20:20:11
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -55,8 +55,8 @@ def run(autd: Controller):
 
             # ... change the radius and height here
             # example
-            radius = radius_list[i % 1000]
-            i += 1
+            # radius = radius_list[i % 1000]
+            # i += 1
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
@@ -76,15 +76,18 @@ if __name__ == '__main__':
     autd = Controller()
 
     # Multiple AUTD
+    # The arrangement of the AUTDs:
+    # 1 → 2
+    #     ↓
+    # 4 ← 3
+    # (See from the upside)
     num_autd = input('Choose the number of using AUTD: ')
     if num_autd == '4':
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 2
-        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])   # 1
-        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 4
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.]) # 3
-        
-
-        
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+ 
     elif num_autd == '1':
         autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
     else:
