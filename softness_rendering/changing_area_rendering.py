@@ -1,8 +1,8 @@
 '''
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
-LastEditors: Mingxin Zhang
-LastEditTime: 2023-01-12 13:42:37
+LastEditors: error: git config user.name & please set dead value or install git
+LastEditTime: 2023-01-13 16:52:35
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -36,7 +36,7 @@ def run(autd: Controller):
     m = Sine(150)
     radius = 1.0    # radius of STM
     step = 0.2      # step length (mm)
-    stm_f = 5.0     # frequency of STM
+    stm_f = 10.0     # frequency of STM
     theta = 0
     config = SilencerConfig.none()
     autd.send(config)
@@ -78,10 +78,12 @@ if __name__ == '__main__':
     # Multiple AUTD
     num_autd = input('Choose the number of using AUTD: ')
     if num_autd == '4':
-        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 2
+        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])   # 1
+        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 4
+        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.]) # 3
+        
+
         
     elif num_autd == '1':
         autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
