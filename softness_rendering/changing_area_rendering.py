@@ -33,7 +33,7 @@ def run(autd: Controller):
 
     center = autd.geometry.center + np.array([0., 0., 150.])
     # m = Static(1.0)
-    m = Sine(150)
+    m = Static(1)
     radius = 1.0    # radius of STM
     step = 0.2      # step length (mm)
     stm_f = 10.0     # frequency of STM

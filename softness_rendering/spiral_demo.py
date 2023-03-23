@@ -33,7 +33,7 @@ def stm_gain(autd: Controller):
         f = Focus(center + p)
         stm.add(f)
 
-    m = Static(1.0)
+    m = Static(1)
     stm.frequency = 0.4
     autd.send(m, stm)
 
