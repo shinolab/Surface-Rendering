@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-05 18:53:36
+LastEditTime: 2023-04-05 20:19:11
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -52,8 +52,8 @@ def run(autd: Controller, conn):
 
     print('press ctrl+c to finish...')
 
-    sub, pub = conn
-    sub.close()
+    subscriber, publisher = conn
+    subscriber.close()
 
     try:
         while True:
@@ -63,8 +63,8 @@ def run(autd: Controller, conn):
             autd.send(m, f)
 
             # ... change the radius and height here
-            if pub.poll():
-                height = pub.recv()
+            if publisher.poll():
+                height = publisher.recv()
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
@@ -76,7 +76,7 @@ def run(autd: Controller, conn):
 
     print('finish.')
     autd.send(Stop())
-    pub.close()
+    publisher.close()
 
     autd.dispose()
 
@@ -127,8 +127,8 @@ def get_finger_distance(conn):
     align_to = rs.stream.color
     align = rs.align(align_to)
 
-    sub, pub = conn
-    pub.close()
+    subscriber, publisher = conn
+    publisher.close()
 
     try:
         with mp_hands.Hands(model_complexity=0, min_detection_confidence=0.5, min_tracking_confidence=0.5) as hands:
@@ -171,7 +171,7 @@ def get_finger_distance(conn):
                         # print(hand_landmarks.landmark[8].x, hand_landmarks.landmark[8].y)
                         finger_dis = depth_image[y_index][x_index]
                         print(finger_dis)
-                        sub.send(finger_dis)
+                        subscriber.send(finger_dis)
 
                     # Flip the image horizontally for a selfie-view display.
                     cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
@@ -183,7 +183,7 @@ def get_finger_distance(conn):
         # Stop streaming
         pipeline.stop()
         cv2.destroyAllWindows()
-        sub.close()
+        subscriber.close()
 
 
 if __name__ == '__main__':
@@ -224,14 +224,14 @@ if __name__ == '__main__':
 
     autd.check_trials = 50
 
-    sub, pub = Pipe()
+    subscriber, publisher = Pipe()
 
-    p_main = Process(target=run, args=((sub, pub), autd))
+    p_main = Process(target=run, args=((subscriber, publisher), autd))
     p_main.start()
 
-    get_finger_distance((sub, pub))
+    get_finger_distance((subscriber, publisher))
 
-    pub.close()
-    sub.close()
+    publisher.close()
+    subscriber.close()
 
     p_main.join()
