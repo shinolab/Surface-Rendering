@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 14:57:59
+LastEditTime: 2023-04-07 15:41:33
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -196,8 +196,10 @@ def get_finger_distance(subscriber, publisher):
                         # print(x_index, y_index)
                         # print(hand_landmarks.landmark[8].x, hand_landmarks.landmark[8].y)
                         finger_dis = depth_image[y_index][x_index]
-                        ang_x = math.radians((x_index - W / 2) / (W / 2) * (69 / 2))
-                        ang_y = math.radians((y_index - H / 2) / (H / 2) * (42 / 2))
+                        
+                        # rgb fov of D435i: 69° x 42°
+                        ang_x = math.radians((W / 2 - x_index) / (W / 2) * (69 / 2))
+                        ang_y = math.radians((H / 2 - y_index) / (H / 2) * (42 / 2))
                         x_dis = math.tan(ang_x) * finger_dis
                         y_dis = math.tan(ang_y) * finger_dis
                         print('xyz coordinate: ', x_dis, y_dis, finger_dis)
