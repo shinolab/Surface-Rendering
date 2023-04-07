@@ -1,3 +1,10 @@
+'''
+Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
+Date: 2023-04-05 17:40:31
+LastEditors: Mingxin Zhang
+LastEditTime: 2023-04-07 16:02:55
+Copyright (c) 2023 by ${git_name}, All Rights Reserved. 
+'''
 import pyrealsense2 as rs
 import numpy as np
 import cv2
@@ -37,16 +44,6 @@ config.enable_stream(rs.stream.color, W, H, rs.format.bgr8, 30)
 # Start streaming
 profile = pipeline.start(config)
 
-# Getting the depth sensor's depth scale (see rs-align example for explanation)
-depth_sensor = profile.get_device().first_depth_sensor()
-
-depth_scale = depth_sensor.get_depth_scale()
-print("Depth Scale is: " , depth_scale)
-
-# Remove the background of objects more than clipping_distance_in_meters (user's set) meters away
-clipping_distance_in_meters = 1 #1 meter
-clipping_distance = clipping_distance_in_meters / depth_scale
-
 # Create an align object
 # rs.align allows us to perform alignment of depth frames to others frames
 # The "align_to" is the stream type to which we plan to align depth frames.
@@ -71,7 +68,6 @@ try:
             if not depth_frame or not color_frame:
                 continue
 
-            depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
             results = hands.process(color_image)
@@ -92,7 +88,7 @@ try:
                     cv2.circle(color_image, (x_index, y_index), 10, (0, 0, 255))
                     # print(x_index, y_index)
                     # print(hand_landmarks.landmark[8].x, hand_landmarks.landmark[8].y)
-                    finger_dis = depth_image[y_index][x_index]
+                    finger_dis = 1000 * depth_frame.get_distance(x_index, y_index)
                     ang_x = math.radians((x_index - W / 2) / (W / 2) * (69 / 2))
                     ang_y = math.radians((y_index - H / 2) / (H / 2) * (42 / 2))
                     x_dis = math.tan(ang_x) * finger_dis
