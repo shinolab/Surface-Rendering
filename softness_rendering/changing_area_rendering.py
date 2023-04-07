@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-05 20:19:11
+LastEditTime: 2023-04-07 12:39:25
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     subscriber, publisher = Pipe()
 
-    p_main = Process(target=run, args=((subscriber, publisher), autd))
+    p_main = Process(target=run, args=(autd, (subscriber, publisher)))
     p_main.start()
 
     get_finger_distance((subscriber, publisher))
