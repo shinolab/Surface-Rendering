@@ -38,7 +38,10 @@ else:
 profile = pipeline.start(config)
 
 # Getting the depth sensor's depth scale (see rs-align example for explanation)
-depth_sensor = profile.get_device().first_depth_sensor()
+device = profile.get_device()
+depth_sensor = device.first_depth_sensor()
+device.hardware_reset()
+
 depth_scale = depth_sensor.get_depth_scale()
 print("Depth Scale is: " , depth_scale)
 

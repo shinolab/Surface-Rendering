@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 12:39:25
+LastEditTime: 2023-04-07 13:37:15
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -27,7 +27,29 @@ dll = ctypes.cdll.LoadLibrary
 libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
 
 
-def run(autd: Controller, conn):
+def run(subscriber, publisher):
+    autd = Controller()
+
+    # Multiple AUTD
+    # The arrangement of the AUTDs:
+    # 1 → 2
+    #     ↓
+    # 4 ← 3
+    # (See from the upside)
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+
+    # link = Simulator().build()
+    link = SOEM().high_precision(True).build()
+
+    if not autd.open(link):
+        print('Failed to open Controller')
+        exit()
+
+    autd.check_trials = 50
+
     autd.send(Clear())
     autd.send(Synchronize())
 
@@ -52,7 +74,6 @@ def run(autd: Controller, conn):
 
     print('press ctrl+c to finish...')
 
-    subscriber, publisher = conn
     subscriber.close()
 
     try:
@@ -81,7 +102,7 @@ def run(autd: Controller, conn):
     autd.dispose()
 
 
-def get_finger_distance(conn):
+def get_finger_distance(subscriber, publisher):
     # Initialization hand tracking
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -93,7 +114,6 @@ def get_finger_distance(conn):
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
     pipeline_profile = config.resolve(pipeline_wrapper)
     device = pipeline_profile.get_device()
-    device_product_line = str(device.get_info(rs.camera_info.product_line))
 
     # Judge whether there is rgb input
     found_rgb = False
@@ -127,7 +147,6 @@ def get_finger_distance(conn):
     align_to = rs.stream.color
     align = rs.align(align_to)
 
-    subscriber, publisher = conn
     publisher.close()
 
     try:
@@ -187,49 +206,12 @@ def get_finger_distance(conn):
 
 
 if __name__ == '__main__':
-    autd = Controller()
-
-    # Multiple AUTD
-    # The arrangement of the AUTDs:
-    # 1 → 2
-    #     ↓
-    # 4 ← 3
-    # (See from the upside)
-    num_autd = input('Choose the number of using AUTD: ')
-    if num_autd == '4':
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-        autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
- 
-    elif num_autd == '1':
-        autd.geometry.add_device([0., 0., 0.], [0., 0., 0.])
-    else:
-        exit()
-
-    if_use_simulator = input('If use simulator? [y: simulator] or [n: AUTD]: ')
-
-    if if_use_simulator == 'y':
-        print('Use simulator')
-        link = Simulator().build()
-    elif if_use_simulator == 'n':
-        print('Use AUTD device')
-        link = SOEM().high_precision(True).build()
-    else:
-        exit()
-
-    if not autd.open(link):
-        print('Failed to open Controller')
-        exit()
-
-    autd.check_trials = 50
-
     subscriber, publisher = Pipe()
 
-    p_main = Process(target=run, args=(autd, (subscriber, publisher)))
+    p_main = Process(target=run, args=(subscriber, publisher))
     p_main.start()
 
-    get_finger_distance((subscriber, publisher))
+    get_finger_distance(subscriber, publisher)
 
     publisher.close()
     subscriber.close()
