@@ -97,8 +97,8 @@ try:
                     finger_dis = depth_image[y_index][x_index]
                     print(finger_dis)
 
-                # Flip the image horizontally for a selfie-view display.
-                cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
+            # Flip the image horizontally for a selfie-view display.
+            cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

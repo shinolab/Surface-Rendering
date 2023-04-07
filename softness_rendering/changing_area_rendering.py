@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 13:37:15
+LastEditTime: 2023-04-07 14:02:52
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -192,8 +192,8 @@ def get_finger_distance(subscriber, publisher):
                         print(finger_dis)
                         subscriber.send(finger_dis)
 
-                    # Flip the image horizontally for a selfie-view display.
-                    cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
+                # Flip the image horizontally for a selfie-view display.
+                cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
