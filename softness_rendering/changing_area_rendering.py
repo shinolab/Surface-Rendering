@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 14:02:52
+LastEditTime: 2023-04-07 14:57:59
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -26,6 +26,8 @@ import time
 dll = ctypes.cdll.LoadLibrary
 libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
 
+W = 640
+H = 480
 
 def run(subscriber, publisher):
     autd = Controller()
@@ -68,7 +70,9 @@ def run(subscriber, publisher):
     step = 0.2      # step length (mm)
     stm_f = 6.0     # frequency of STM
     theta = 0
-    height = 150.   # init height
+    height = 150.   # init x, y, height
+    x = 0.
+    y = 0.
     config = SilencerConfig.none()
     autd.send(config)
 
@@ -79,13 +83,16 @@ def run(subscriber, publisher):
     try:
         while True:
             # update the focus information
-            p = radius * np.array([np.cos(theta), np.sin(theta), height])
+            p = radius * np.array([x + np.cos(theta), y + np.sin(theta), height])
             f = Focus(center + p)
             autd.send(m, f)
 
             # ... change the radius and height here
             if publisher.poll():
-                height = publisher.recv()
+                coordinate = publisher.recv()
+                x = coordinate[0]
+                y = coordinate[1]
+                height = coordinate[2]
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
@@ -126,8 +133,8 @@ def get_finger_distance(subscriber, publisher):
         exit(0)
 
     # Decide resolutions for both depth and rgb streaming
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    config.enable_stream(rs.stream.depth, W, H, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, W, H, rs.format.bgr8, 30)
 
     # Start streaming
     profile = pipeline.start(config)
@@ -183,14 +190,18 @@ def get_finger_distance(subscriber, publisher):
                             mp_drawing_styles.get_default_hand_landmarks_style(),
                             mp_drawing_styles.get_default_hand_connections_style())
 
-                        x_index = math.floor(hand_landmarks.landmark[8].x * 640)
-                        y_index = math.floor(hand_landmarks.landmark[8].y * 480)
+                        x_index = math.floor(hand_landmarks.landmark[8].x * W)
+                        y_index = math.floor(hand_landmarks.landmark[8].y * H)
                         cv2.circle(color_image, (x_index, y_index), 10, (0, 0, 255))
                         # print(x_index, y_index)
                         # print(hand_landmarks.landmark[8].x, hand_landmarks.landmark[8].y)
                         finger_dis = depth_image[y_index][x_index]
-                        print(finger_dis)
-                        subscriber.send(finger_dis)
+                        ang_x = math.radians((x_index - W / 2) / (W / 2) * (69 / 2))
+                        ang_y = math.radians((y_index - H / 2) / (H / 2) * (42 / 2))
+                        x_dis = math.tan(ang_x) * finger_dis
+                        y_dis = math.tan(ang_y) * finger_dis
+                        print('xyz coordinate: ', x_dis, y_dis, finger_dis)
+                        subscriber.send([x_dis, y_dis, finger_dis])
 
                 # Flip the image horizontally for a selfie-view display.
                 cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))

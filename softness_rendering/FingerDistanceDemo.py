@@ -11,6 +11,9 @@ mp_hands = mp.solutions.hands
 pipeline = rs.pipeline()
 config = rs.config()
 
+W = 640
+H = 480
+
 # Get device product line for setting a supporting resolution
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
@@ -28,19 +31,14 @@ if not found_rgb:
     exit(0)
 
 # Decide resolutions for both depth and rgb streaming
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-if device_product_line == 'L500':
-    config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
-else:
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, W, H, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, W, H, rs.format.bgr8, 30)
 
 # Start streaming
 profile = pipeline.start(config)
 
 # Getting the depth sensor's depth scale (see rs-align example for explanation)
-device = profile.get_device()
-depth_sensor = device.first_depth_sensor()
-device.hardware_reset()
+depth_sensor = profile.get_device().first_depth_sensor()
 
 depth_scale = depth_sensor.get_depth_scale()
 print("Depth Scale is: " , depth_scale)
@@ -89,13 +87,17 @@ try:
                         mp_drawing_styles.get_default_hand_landmarks_style(),
                         mp_drawing_styles.get_default_hand_connections_style())
 
-                    x_index = math.floor(hand_landmarks.landmark[8].x * 640)
-                    y_index = math.floor(hand_landmarks.landmark[8].y * 480)
+                    x_index = math.floor(hand_landmarks.landmark[8].x * W)
+                    y_index = math.floor(hand_landmarks.landmark[8].y * H)
                     cv2.circle(color_image, (x_index, y_index), 10, (0, 0, 255))
                     # print(x_index, y_index)
                     # print(hand_landmarks.landmark[8].x, hand_landmarks.landmark[8].y)
                     finger_dis = depth_image[y_index][x_index]
-                    print(finger_dis)
+                    ang_x = math.radians((x_index - W / 2) / (W / 2) * (69 / 2))
+                    ang_y = math.radians((y_index - H / 2) / (H / 2) * (42 / 2))
+                    x_dis = math.tan(ang_x) * finger_dis
+                    y_dis = math.tan(ang_y) * finger_dis
+                    print('xyz coordinate: ', x_dis, y_dis, finger_dis)
 
             # Flip the image horizontally for a selfie-view display.
             cv2.imshow('MediaPipe Hands', cv2.flip(color_image, 1))
