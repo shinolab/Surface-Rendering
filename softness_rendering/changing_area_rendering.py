@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 16:03:22
+LastEditTime: 2023-04-07 17:09:00
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -67,12 +67,14 @@ def run(subscriber, publisher):
     # m = Sine(150)
 
     radius = 1.0    # radius of STM
+    zero_radius = 1.0
     step = 0.2      # step length (mm)
     stm_f = 6.0     # frequency of STM
     theta = 0
-    height = 150.   # init x, y, height
+    height = 200.   # init x, y, height
     x = 0.
     y = 0.
+    zero_height = 200.
     config = SilencerConfig.none()
     autd.send(config)
 
@@ -83,7 +85,8 @@ def run(subscriber, publisher):
     try:
         while True:
             # update the focus information
-            p = radius * np.array([x + np.cos(theta), y + np.sin(theta), height])
+            p = radius * np.array([np.cos(theta), np.sin(theta), 0])
+            p += np.array([x, y, height])
             f = Focus(center + p)
             autd.send(m, f)
 
@@ -92,7 +95,12 @@ def run(subscriber, publisher):
                 coordinate = publisher.recv()
                 x = coordinate[0]
                 y = coordinate[1]
-                height = coordinate[2]
+                # height of D435i: 25mm
+                # D435i depth start point: -4.2mm
+                height = coordinate[2] + 25 - 4.2
+            
+            delta_height = zero_height - height
+            radius = zero_radius + min(20, max(delta_height, 0)) * 0.25
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
@@ -188,8 +196,8 @@ def get_finger_distance(subscriber, publisher):
                         finger_dis = 1000 * depth_frame.get_distance(x_index, y_index)  # meter to mm
                         
                         # rgb fov of D435i: 69° x 42°
-                        ang_x = math.radians((W / 2 - x_index) / (W / 2) * (69 / 2))
-                        ang_y = math.radians((H / 2 - y_index) / (H / 2) * (42 / 2))
+                        ang_x = math.radians((x_index - W / 2) / (W / 2) * (69 / 2))
+                        ang_y = math.radians((y_index - H / 2) / (H / 2) * (42 / 2))
                         x_dis = math.tan(ang_x) * finger_dis
                         y_dis = math.tan(ang_y) * finger_dis
                         print('xyz coordinate: ', x_dis, y_dis, finger_dis)
