@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-07 17:09:00
+LastEditTime: 2023-04-10 17:06:04
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -75,7 +75,7 @@ def run(subscriber, publisher):
     x = 0.
     y = 0.
     zero_height = 200.
-    config = SilencerConfig.none()
+    config = SilencerConfig()
     autd.send(config)
 
     print('press ctrl+c to finish...')
