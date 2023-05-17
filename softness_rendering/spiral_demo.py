@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 13:37:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-17 14:17:00
+LastEditTime: 2023-05-17 16:15:39
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -27,14 +27,14 @@ def stm_gain(autd: Controller):
 
     center = autd.geometry.center + np.array([0., 0., 150.])
     for i in range(1000):
-        radius += 0.005
+        # radius += 0.005
         # theta = step / radius
         theta = 50 * 2 * np.pi * i / 1000
         p = radius * np.array([np.cos(theta), np.sin(theta), 0])
         f = Focus(center + p)
         stm.add(f)
 
-    m = Static(1)
+    m = Sine(100)
     stm.frequency = 0.4
     autd.send(m, stm)
 

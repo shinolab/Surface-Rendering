@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-10 17:06:04
+LastEditTime: 2023-05-17 18:04:38
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -38,10 +38,10 @@ def run(subscriber, publisher):
     #     ↓
     # 4 ← 3
     # (See from the upside)
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
 
     # link = Simulator().build()
     link = SOEM().high_precision(True).build()
@@ -97,7 +97,7 @@ def run(subscriber, publisher):
                 y = coordinate[1]
                 # height of D435i: 25mm
                 # D435i depth start point: -4.2mm
-                height = coordinate[2] + 25 - 4.2
+                height = coordinate[2] - 4 - 4.2
             
             delta_height = zero_height - height
             radius = zero_radius + min(20, max(delta_height, 0)) * 0.25
