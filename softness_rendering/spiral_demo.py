@@ -1,8 +1,8 @@
 '''
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 13:37:25
-LastEditors: error: git config user.name & please set dead value or install git
-LastEditTime: 2023-01-13 16:47:54
+LastEditors: Mingxin Zhang
+LastEditTime: 2023-05-17 14:17:00
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -18,6 +18,7 @@ from pyautd3.modulation import Sine
 
 def stm_gain(autd: Controller):
     config = SilencerConfig.none()
+    
     autd.send(config)
     stm = GainSTM(autd)
     radius = 1.0
