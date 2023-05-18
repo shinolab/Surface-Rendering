@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-18 10:33:01
+LastEditTime: 2023-05-18 14:40:57
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -16,11 +16,10 @@ import ctypes
 import platform
 import os
 import pyrealsense2 as rs
-import cv2
-import mediapipe as mp
 import math
 from multiprocessing import Process, Pipe
 import time
+
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
@@ -123,7 +122,7 @@ def get_finger_distance(subscriber, publisher):
     device = pipeline_profile.get_device()
 
     # Decide resolutions for both depth and rgb streaming
-    config.enable_stream(rs.stream.depth, W, H, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
     # Start streaming
     pipeline.start(config)
