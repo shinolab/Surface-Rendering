@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-05 17:40:31
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-18 16:50:16
+LastEditTime: 2023-05-19 15:34:15
 Copyright (c) 2023 by ${git_name}, All Rights Reserved. 
 '''
 import pyrealsense2 as rs
@@ -43,7 +43,7 @@ try:
         filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
         depth_frame = filter.process(depth_frame)
         depth_img = np.asanyarray(depth_frame.get_data())
-        depth_img = depth_img[int(W/2)-50:int(W/2)+50, int(H/2)-50:int(H/2)+50]
+        depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
         
         mass_x, mass_y = np.where(depth_img > 0)
         if mass_x.size == 0 or mass_y.size == 0:

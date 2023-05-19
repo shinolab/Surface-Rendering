@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-18 17:29:14
+LastEditTime: 2023-05-19 15:30:26
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -59,12 +59,12 @@ def run(subscriber, publisher):
 
     center = autd.geometry.center + np.array([0., 0., 0.])
 
-    m = Static(1.0)
-    # m = Sine(150)
+    # m = Static(1.0)
+    m = Sine(108)
 
     radius = 3.0    # radius of STM
     step = 0.2      # step length (mm)
-    stm_f = 6.0     # frequency of STM
+    stm_f = 5.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height
     x = 0.
@@ -142,7 +142,7 @@ def get_finger_distance(subscriber, publisher):
             depth_frame = filter.process(depth_frame)
             depth_img = np.asanyarray(depth_frame.get_data())
             # Set the detect range
-            depth_img = depth_img[int(W/2)-50:int(W/2)+50, int(H/2)-50:int(H/2)+50]
+            depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
             
             mass_x, mass_y = np.where(depth_img > 0)
             if mass_x.size == 0 or mass_y.size == 0:
@@ -155,6 +155,7 @@ def get_finger_distance(subscriber, publisher):
             height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
+            # rgb fov of D435i: 69° x 42°
             ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
             ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
             x_dis = math.tan(ang_x) * height

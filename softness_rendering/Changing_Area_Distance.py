@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-18 14:46:09
+LastEditTime: 2023-05-19 15:32:02
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -16,10 +16,10 @@ import ctypes
 import platform
 import os
 import pyrealsense2 as rs
+import cv2
 import math
 from multiprocessing import Process, Pipe
 import time
-
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
@@ -60,17 +60,18 @@ def run(subscriber, publisher):
     center = autd.geometry.center + np.array([0., 0., 0.])
 
     m = Static(1.0)
-    # m = Sine(150)
+    # m = Sine(108)
 
-    radius = 1.0    # radius of STM
+    radius = 3.0    # radius of STM
     zero_radius = 1.0
+    zero_stm_f = 3.0
+    zero_height = 230.
     step = 0.2      # step length (mm)
-    stm_f = 6.0     # frequency of STM
+    stm_f = 5.0     # frequency of STM
     theta = 0
-    height = 200.   # init x, y, height
+    height = 230.   # init x, y, height
     x = 0.
     y = 0.
-    zero_height = 200.
     config = SilencerConfig()
     autd.send(config)
 
@@ -88,13 +89,16 @@ def run(subscriber, publisher):
 
             # ... change the radius and height here
             if publisher.poll():
-                height = publisher.recv()
+                coordinate = publisher.recv()
+                x = coordinate[0]
+                y = coordinate[1]
                 # height of D435i: 25mm
                 # D435i depth start point: -4.2mm
-                height = height - 4 - 4.2
-            
+                height = coordinate[2] - 4 - 4.2
+
             delta_height = zero_height - height
-            radius = zero_radius + min(20, max(delta_height, 0)) * 0.25
+            radius = zero_radius + min(30, max(delta_height, 0)) * 0.16
+            stm_f = zero_stm_f + min(3, max(delta_height, 0) * 0.1)
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
@@ -116,11 +120,6 @@ def get_finger_distance(subscriber, publisher):
     pipeline = rs.pipeline()
     config = rs.config()
 
-    # Get device product line for setting a supporting resolution
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-
     # Decide resolutions for both depth and rgb streaming
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
@@ -131,8 +130,11 @@ def get_finger_distance(subscriber, publisher):
 
     try:
         while True:
+            # Get frameset of color and depth
             frames = pipeline.wait_for_frames()
+            # frames.get_depth_frame() is a 640x360 depth image
 
+            # Get aligned frames
             depth_frame = frames.get_depth_frame() # depth_frame is a 640x480 depth image
 
             # Validate that both frames are valid
@@ -141,17 +143,47 @@ def get_finger_distance(subscriber, publisher):
 
             W = depth_frame.get_width()
             H = depth_frame.get_height()
-
-            # fixed center point
-            finger_dis = 1000 * depth_frame.get_distance(math.floor(0.5 * W), math.floor(0.5 * H))  # meter to mm
             
+            # Set the contact area height to 23cm
+            filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
+            depth_frame = filter.process(depth_frame)
+            depth_img = np.asanyarray(depth_frame.get_data())
+            # Set the detect range
+            depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
+            
+            mass_x, mass_y = np.where(depth_img > 0)
+            if mass_x.size == 0 or mass_y.size == 0:
+                continue
+
+            # mass_x and mass_y are the list of x indices and y indices of mass pixels
+            cent_x = int(np.average(mass_x))
+            cent_y = int(np.average(mass_y))
+            print(cent_x, cent_y)
+            height = depth_img[cent_x, cent_y]
+
+            # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°
-            print('height: ', finger_dis)
-            subscriber.send(finger_dis)
+            ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
+            ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
+            x_dis = math.tan(ang_x) * height
+            y_dis = math.tan(ang_y) * height
+
+            print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
+            subscriber.send([y_dis, x_dis, height])
+            
+            # put text and highlight the center
+            cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
+
+            depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
+            cv2.imshow('Detect Area', cv2.flip(depth_img, 1))
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     finally:
         # Stop streaming
         pipeline.stop()
+        cv2.destroyAllWindows()
         subscriber.close()
 
 
