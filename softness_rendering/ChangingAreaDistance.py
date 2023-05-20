@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-19 15:32:02
+LastEditTime: 2023-05-20 21:32:57
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -158,7 +158,6 @@ def get_finger_distance(subscriber, publisher):
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
-            print(cent_x, cent_y)
             height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
@@ -168,11 +167,19 @@ def get_finger_distance(subscriber, publisher):
             x_dis = math.tan(ang_x) * height
             y_dis = math.tan(ang_y) * height
 
+            delta_height = 230. - height
+            radius = 1. + min(30, max(delta_height, 0)) * 0.16
+
+            ang_r = math.atan(radius / height)
+            print(ang_r)
+            r_pixel = H * ang_r / math.radians(58 / 2)
+            print(r_pixel)
+
             print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
             subscriber.send([y_dis, x_dis, height])
             
             # put text and highlight the center
-            cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
+            cv2.circle(depth_img, (cent_y, cent_x), int(r_pixel), (255, 255, 255), -1)
 
             depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
             cv2.imshow('Detect Area', cv2.flip(depth_img, 1))
