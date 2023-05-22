@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 13:37:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-17 16:15:39
+LastEditTime: 2023-05-22 15:17:36
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -22,13 +22,13 @@ def stm_gain(autd: Controller):
     autd.send(config)
     stm = GainSTM(autd)
     radius = 1.0
-    # step = 0.2
-    # size = 50 * 2 * np.pi * radius // step
+    step = 0.2
+    size = 50 * 2 * np.pi * radius // step
 
     center = autd.geometry.center + np.array([0., 0., 150.])
     for i in range(1000):
-        # radius += 0.005
-        # theta = step / radius
+        radius += 0.005
+        theta = step / radius
         theta = 50 * 2 * np.pi * i / 1000
         p = radius * np.array([np.cos(theta), np.sin(theta), 0])
         f = Focus(center + p)
@@ -59,10 +59,10 @@ def run(autd: Controller):
 if __name__ == '__main__':
     autd = Controller()
 
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 2
-    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])   # 1
-    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])  # 4
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.]) # 3
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
+    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
 
     if_use_simulator = input('If use simulator? [y: simulator] or [n: AUTD]: ')
 

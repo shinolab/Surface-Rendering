@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-20 21:32:57
+LastEditTime: 2023-05-22 15:36:24
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -62,7 +62,7 @@ def run(subscriber, publisher):
     m = Static(1.0)
     # m = Sine(108)
 
-    radius = 3.0    # radius of STM
+    radius = 5.0    # radius of STM
     zero_radius = 1.0
     zero_stm_f = 3.0
     zero_height = 230.
@@ -98,7 +98,7 @@ def run(subscriber, publisher):
 
             delta_height = zero_height - height
             radius = zero_radius + min(30, max(delta_height, 0)) * 0.16
-            stm_f = zero_stm_f + min(3, max(delta_height, 0) * 0.1)
+            # stm_f = zero_stm_f + min(3, max(delta_height, 0) * 0.1)
 
             theta += step / radius
             size = 2 * np.pi * radius // step   # recalculate the number of points in a round
