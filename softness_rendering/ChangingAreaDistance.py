@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-22 15:36:24
+LastEditTime: 2023-05-22 18:47:02
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -62,12 +62,13 @@ def run(subscriber, publisher):
     m = Static(1.0)
     # m = Sine(108)
 
-    radius = 5.0    # radius of STM
+    radius = 3.0    # radius of STM
     zero_radius = 1.0
     zero_stm_f = 3.0
     zero_height = 230.
-    step = 0.2      # step length (mm)
-    stm_f = 5.0     # frequency of STM
+    # step = 0.2      # step length (mm)
+    time_step = 0.0015
+    stm_f = 1.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height
     x = 0.
@@ -98,11 +99,13 @@ def run(subscriber, publisher):
 
             delta_height = zero_height - height
             radius = zero_radius + min(30, max(delta_height, 0)) * 0.16
-            # stm_f = zero_stm_f + min(3, max(delta_height, 0) * 0.1)
+            stm_f = zero_stm_f + min(7, max(delta_height, 0) * 0.2)
 
-            theta += step / radius
-            size = 2 * np.pi * radius // step   # recalculate the number of points in a round
-            time_step = (1 / stm_f) / size  # recalculate time step
+            theta += 2 * np.pi * stm_f * time_step
+
+            # theta += step / radius
+            # size = 2 * np.pi * radius // step   # recalculate the number of points in a round
+            # time_step = (1 / stm_f) / size  # recalculate time step
             libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
 
     except KeyboardInterrupt:
