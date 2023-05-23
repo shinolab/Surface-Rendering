@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-19 20:50:05
+LastEditTime: 2023-05-23 10:10:57
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -63,7 +63,8 @@ def run(subscriber, publisher):
     m = Sine(108)
 
     radius = 3.0    # radius of STM
-    step = 0.2      # step length (mm)
+    # step = 0.2      # step length (mm)
+    time_step = 0.0015
     stm_f = 5.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height
@@ -93,9 +94,11 @@ def run(subscriber, publisher):
                 # D435i depth start point: -4.2mm
                 height = coordinate[2] - 4 - 4.2
 
-            theta += step / radius
-            size = 2 * np.pi * radius // step   # recalculate the number of points in a round
-            time_step = (1 / stm_f) / size  # recalculate time step
+            theta += 2 * np.pi * stm_f * time_step
+
+            # theta += step / radius
+            # size = 2 * np.pi * radius // step   # recalculate the number of points in a round
+            # time_step = (1 / stm_f) / size  # recalculate time step
             libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
 
     except KeyboardInterrupt:
