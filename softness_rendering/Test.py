@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 16:08:00
+LastEditTime: 2023-05-24 16:28:18
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -119,8 +119,7 @@ def run(subscriber, publisher):
                     stm.add(center + p)
                 stm.frequency = stm_f
 
-                print('X:', "%.2f" %x, 'Y:', "%.2f" %y, 'Z:', "%.2f" %height, 
-                      'Radius:', "%.2f" %radius, 'STM_f:', "%.2f" %stm_f, 'Hz')
+                print('Height:', "%.2f" %height, 'mm, Radius:', "%.2f" %radius, 'mm, STM_f:', "%.2f" %stm_f, 'Hz')
 
                 autd.send(m, stm)
 
