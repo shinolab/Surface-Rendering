@@ -2,13 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 14:30:31
+LastEditTime: 2023-05-24 15:48:38
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from pyautd3.link import SOEM
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
+from pyautd3.stm import FocusSTM
 from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Static, Sine
 import numpy as np
@@ -59,13 +60,16 @@ def run(subscriber, publisher):
 
     center = autd.geometry.center + np.array([0., 0., 0.])
 
-    # m = Static(1.0)
-    m = Sine(108)
+    m = Static(1.0)
+    # m = Sine(150)
 
     radius = 3.0    # radius of STM
+    zero_radius = 1.0
+    zero_stm_f = 3.0
+    zero_height = 230.
     # step = 0.2      # step length (mm)
     time_step = 0.0015
-    stm_f = 5.0     # frequency of STM
+    stm_f = 1.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height
     x = 0.
@@ -78,16 +82,21 @@ def run(subscriber, publisher):
     subscriber.close()
 
     try:
-        while True:
-            # update the focus information
+        # initial output
+        sound_speed = autd.sound_speed
+        stm = FocusSTM(sound_speed)
+        center = autd.geometry.center + np.array([0., 0., height])
+        size = int((1/stm_f)/time_step)
+        for i in range(size):
+            theta = 2.0 * np.pi * i / size
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
-            p += np.array([x, y, height])
-            f = Focus(center + p)
-            tic = time.time()
-            autd.send(m, f)
-            toc = time.time()
-            print(toc-tic)
+            stm.add(center + p)
+        stm.frequency = stm_f
 
+        autd.send(m, stm)
+
+        while True:
+            # update
             # ... change the radius and height here
             if publisher.poll():
                 coordinate = publisher.recv()
@@ -97,16 +106,22 @@ def run(subscriber, publisher):
                 # D435i depth start point: -4.2mm
                 height = coordinate[2] - 4 - 4.2
 
-            theta += 2 * np.pi * stm_f * time_step
+                delta_height = zero_height - height
+                radius = zero_radius + min(30, max(delta_height, 0)) * 0.16
+                stm_f = zero_stm_f + min(7, max(delta_height, 0) * 0.2)
 
-            tic = time.time()
+                stm = FocusSTM(sound_speed)
+                center = autd.geometry.center + np.array([x, y, height])
+                size = int((1/stm_f)/time_step)
+                for i in range(size):
+                    theta = 2.0 * np.pi * i / size
+                    p = radius * np.array([np.cos(theta), np.sin(theta), 0])
+                    stm.add(center + p)
+                stm.frequency = stm_f
 
-            # theta += step / radius
-            # size = 2 * np.pi * radius // step   # recalculate the number of points in a round
-            # time_step = (1 / stm_f) / size  # recalculate time step
-            libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
-            toc = time.time()
-            print(toc-tic)
+                autd.send(m, stm)
+
+
 
     except KeyboardInterrupt:
         pass
@@ -161,7 +176,6 @@ def get_finger_distance(subscriber, publisher):
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
-            print(cent_x, cent_y)
             height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
@@ -171,11 +185,19 @@ def get_finger_distance(subscriber, publisher):
             x_dis = math.tan(ang_x) * height
             y_dis = math.tan(ang_y) * height
 
+            delta_height = 230. - height
+            radius = 1. + min(30, max(delta_height, 0)) * 0.16
+
+            ang_r = math.atan(radius / height)
+            print(ang_r)
+            r_pixel = H * ang_r / math.radians(58 / 2)
+            print(r_pixel)
+
             print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
             subscriber.send([y_dis, x_dis, height])
             
             # put text and highlight the center
-            cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
+            cv2.circle(depth_img, (cent_y, cent_x), int(r_pixel), (255, 255, 255), -1)
 
             depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
             cv2.imshow('Detect Area', cv2.flip(depth_img, 1))
