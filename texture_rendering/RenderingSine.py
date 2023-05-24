@@ -2,14 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 16:29:29
+LastEditTime: 2023-05-24 20:07:42
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from pyautd3.link import SOEM
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
-from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
@@ -20,33 +20,34 @@ import cv2
 import math
 from multiprocessing import Process, Pipe
 import time
+from datetime import timedelta
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
 libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
 
-def run(subscriber, publisher):
-    autd = Controller()
+def on_lost(msg: ctypes.c_char_p):
+    print(msg.decode('utf-8'), end="")
+    os._exit(-1)
 
+def run(subscriber, publisher):
     # Multiple AUTD
     # The arrangement of the AUTDs:
     # 1 → 2
     #     ↓
     # 4 ← 3
     # (See from the upside)
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
+    geometry = Geometry.Builder()\
+        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+        .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+        .build()
 
-    # link = Simulator().build()
-    link = SOEM().high_precision(True).build()
+    link = Simulator().build()
+    # link = SOEM().on_lost(on_lost_func).build()
 
-    if not autd.open(link):
-        print('Failed to open Controller')
-        exit()
-
-    autd.check_trials = 50
+    autd = Controller.open(geometry, link)
 
     autd.send(Clear())
     autd.send(Synchronize())
@@ -84,7 +85,7 @@ def run(subscriber, publisher):
             p += np.array([x, y, height])
             f = Focus(center + p)
             tic = time.time()
-            autd.send(m, f)
+            autd.send(m, f, timedelta(microseconds=0))
             toc = time.time()
             print(toc-tic)
 
