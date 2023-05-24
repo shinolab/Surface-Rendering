@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 15:48:38
+LastEditTime: 2023-05-24 16:08:00
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -63,13 +63,13 @@ def run(subscriber, publisher):
     m = Static(1.0)
     # m = Sine(150)
 
-    radius = 3.0    # radius of STM
+    radius = 1.0    # radius of STM
     zero_radius = 1.0
     zero_stm_f = 3.0
     zero_height = 230.
     # step = 0.2      # step length (mm)
     time_step = 0.0015
-    stm_f = 1.0     # frequency of STM
+    stm_f = 3.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height
     x = 0.
@@ -118,6 +118,9 @@ def run(subscriber, publisher):
                     p = radius * np.array([np.cos(theta), np.sin(theta), 0])
                     stm.add(center + p)
                 stm.frequency = stm_f
+
+                print('X:', "%.2f" %x, 'Y:', "%.2f" %y, 'Z:', "%.2f" %height, 
+                      'Radius:', "%.2f" %radius, 'STM_f:', "%.2f" %stm_f, 'Hz')
 
                 autd.send(m, stm)
 
@@ -189,11 +192,8 @@ def get_finger_distance(subscriber, publisher):
             radius = 1. + min(30, max(delta_height, 0)) * 0.16
 
             ang_r = math.atan(radius / height)
-            print(ang_r)
             r_pixel = H * ang_r / math.radians(58 / 2)
-            print(r_pixel)
 
-            print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
             subscriber.send([y_dis, x_dis, height])
             
             # put text and highlight the center
