@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-25 17:27:36
+LastEditTime: 2023-05-25 18:46:28
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -32,10 +32,10 @@ def on_lost(msg: ctypes.c_char_p):
 
 def run(subscriber, publisher):
     geometry = Geometry.Builder()\
-        .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
+        .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
         .build()
     
     # link = Simulator().build()
@@ -91,7 +91,7 @@ def run(subscriber, publisher):
                 y = coordinate[1]
                 # height of D435i: 25mm
                 # D435i depth start point: -4.2mm
-                height = coordinate[2] - 4 - 4.2
+                height = coordinate[2] - 9 - 4.2
 
             delta_height = zero_height - height
             radius = zero_radius + min(30, max(delta_height, 0)) * 0.16
