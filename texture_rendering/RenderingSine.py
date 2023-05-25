@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-25 15:00:37
+LastEditTime: 2023-05-25 17:26:19
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -31,17 +31,11 @@ def on_lost(msg: ctypes.c_char_p):
     os._exit(-1)
 
 def run(subscriber, publisher):
-    # Multiple AUTD
-    # The arrangement of the AUTDs:
-    # 1 → 2
-    #     ↓
-    # 4 ← 3
-    # (See from the upside)
     geometry = Geometry.Builder()\
-        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
         .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
         .build()
 
     # link = Simulator().build()
@@ -85,10 +79,10 @@ def run(subscriber, publisher):
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
             p += np.array([x, y, height])
             f = Focus(center + p)
-            tic = time.time()
+            # tic = time.time()
             autd.send(m, f, timedelta(microseconds=0))
-            toc = time.time()
-            print(toc-tic)
+            # toc = time.time()
+            # print(toc-tic)
 
             # ... change the radius and height here
             if publisher.poll():
@@ -101,14 +95,14 @@ def run(subscriber, publisher):
 
             theta += 2 * np.pi * stm_f * time_step
 
-            tic = time.time()
+            # tic = time.time()
 
             # theta += step / radius
             # size = 2 * np.pi * radius // step   # recalculate the number of points in a round
             # time_step = (1 / stm_f) / size  # recalculate time step
             libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
-            toc = time.time()
-            print(toc-tic)
+            # toc = time.time()
+            # print(toc-tic)
 
     except KeyboardInterrupt:
         pass
@@ -163,7 +157,7 @@ def get_finger_distance(subscriber, publisher):
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
-            print(cent_x, cent_y)
+            # print(cent_x, cent_y)
             height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
