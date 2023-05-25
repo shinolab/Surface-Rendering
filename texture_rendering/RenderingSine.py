@@ -2,11 +2,11 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 20:07:42
+LastEditTime: 2023-05-25 15:00:37
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
-from pyautd3.link import SOEM
+from pyautd3.link import SOEM, OnLostFunc
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
 from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
@@ -44,8 +44,9 @@ def run(subscriber, publisher):
         .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
         .build()
 
-    link = Simulator().build()
-    # link = SOEM().on_lost(on_lost_func).build()
+    # link = Simulator().build()
+    on_lost_func = OnLostFunc(on_lost)
+    link = SOEM().on_lost(on_lost_func).build()
 
     autd = Controller.open(geometry, link)
 
