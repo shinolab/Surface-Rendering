@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-07 16:15:56
+LastEditTime: 2023-06-07 17:18:39
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -100,7 +100,7 @@ class AUTDThread(QThread):
 
         # import the HighPrecisionSleep() method
         dll = ctypes.cdll.LoadLibrary
-        self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() +\
+        self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() +
                          '/HighPrecisionTimer.so') 
 
     # slot function to accept SLS parameters
@@ -317,10 +317,10 @@ class MainWindow(QWidget):
         
         self.optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-        self.horizontal_slider.valueChanged.connect(lambda value: self.updateValues())
+        self.horizontal_slider.valueChanged.connect(self.updateValues)
 
         next_button = QPushButton("Next")
-        next_button.clicked.connect(lambda value: self.updateOptimizer())
+        next_button.clicked.connect(lambda value: self.updateValues(_update_optimizer_flag=True))
         layout.addWidget(next_button)
 
         whole_hbox.addLayout(layout)
@@ -352,36 +352,15 @@ class MainWindow(QWidget):
         convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         p = convert_to_Qt_format.scaled(self.image_disp_w_h, self.image_disp_w_h, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
-    
-    def updateOptimizer(self):
+
+    def updateValues(self, _update_optimizer_flag=False):
         slider_position = self.horizontal_slider.value() / 999.0
-        self.optimizer.submit_feedback_data(slider_position)
-        print('Next')
 
-        # optmized_para = self.optimizer.get_maximizer()
+        if _update_optimizer_flag:
+            self.optimizer.submit_feedback_data(slider_position)
+            print('Next')
+
         optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
-
-        stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
-        radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
-        freq = int(50 + optmized_para[2] * 150) # wave freq: 50~200Hz
-        amp = optmized_para[3]
-        print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
-        
-        self.autd_thread.SLS_para_signal.emit(np.array([stm_freq, radius, freq, amp]))
-
-        offset = -0.5 * amp + 1
-        self.sinusoid_widget.setAmplitude(amp)
-        self.sinusoid_widget.setOffset(offset)
-        self.sinusoid_widget.setFrequency(freq)
-
-        i = 0
-        for vertical_slider in self.vertical_sliders:
-            vertical_slider.setValue(int(optmized_para[i] * vertical_slider.maximum()))
-            i += 1
-
-    def updateValues(self):
-        t = self.horizontal_slider.value() / 999.0
-        optmized_para = self.optimizer.calc_point_from_slider_position(t)
 
         stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
         radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
