@@ -1,3 +1,10 @@
+'''
+Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
+Date: 2023-05-24 16:31:33
+LastEditors: Mingxin Zhang
+LastEditTime: 2023-06-07 16:15:48
+Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
+'''
 import sys
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
