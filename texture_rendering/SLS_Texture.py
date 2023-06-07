@@ -19,6 +19,8 @@ import os
 import ctypes
 import platform
 
+
+# drawing the waveform
 class SinusoidWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -64,32 +66,37 @@ class SinusoidWidget(QWidget):
             path.lineTo(x, height - y * y_scale)
         painter.drawPath(path)
 
-        # 绘制坐标轴
+        # draw the axis
         axis_thickness = 10
         painter.setPen(QPen(Qt.black, axis_thickness))
         painter.drawLine(0, height, width, height)
         painter.drawLine(0, 0, 0, height)
 
 
+# AUTD thread
 class AUTDThread(QThread):
     SLS_para_signal = pyqtSignal(np.ndarray)
     position_signal = pyqtSignal(np.ndarray)
 
     def __init__(self):
         super().__init__()
+        # connect the signal to the slot function
         self.SLS_para_signal.connect(self.SLSSignal)
         self.video_thread = VideoThread()
         self.video_thread.position_signal.connect(self.PositionSignal)
 
         self._run_flag = True
 
+        # initial parameters
         self.coordinate = np.array([0., 0., 230.])
         self.m = Sine(100)
 
+        # import the HighPrecisionSleep() method
         dll = ctypes.cdll.LoadLibrary
         self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() +\
                          '/HighPrecisionTimer.so') 
 
+    # slot function to accept SLS parameters
     @pyqtSlot(np.ndarray)
     def SLSSignal(self, SLS_para):
         self.stm_f = SLS_para[0]
@@ -99,6 +106,7 @@ class AUTDThread(QThread):
         offset = -0.5 * amp + 1
         self.m = Sine(freq=int(freq), amp=amp, offset=offset)
     
+    # slot function to accept coordinates
     @pyqtSlot(np.ndarray)
     def PositionSignal(self, coordinate):
         self.coordinate = coordinate
@@ -108,6 +116,7 @@ class AUTDThread(QThread):
         os._exit(-1)
 
     def stop(self):
+        # set run flag to False and waits for thread to finish
         self._run_flag = False
         self.wait()
 
@@ -138,9 +147,6 @@ class AUTDThread(QThread):
 
         time_step = 0.002
         theta = 0
-        height = 230.   # init x, y, height
-        x = 0.
-        y = 0.
         config = SilencerConfig()
         autd.send(config)
 
@@ -154,7 +160,8 @@ class AUTDThread(QThread):
                 # ... change the radius and height here
                 x = self.coordinate[0]
                 y = self.coordinate[1]
-                # D435i depth start point: -4.2mm
+                # D435i depth start point: -4.2 mm
+                # the height difference between the transducer surface and the camera: 9 mm
                 height = self.coordinate[2] - 9 - 4.2
                 
                 # update the focus information
@@ -188,10 +195,9 @@ class VideoThread(QThread):
     def __init__(self):
         super().__init__()
         self._run_flag = True
+
         self.pipeline = rs.pipeline()
         self.config = rs.config()
-
-        # Decide resolutions for both depth and rgb streaming
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
     def run(self):
@@ -206,18 +212,23 @@ class VideoThread(QThread):
             
             W = depth_frame.get_width()
             H = depth_frame.get_height()
+            # the height range: 0 ~ 23 cm
             filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
             depth_frame = filter.process(depth_frame)
             depth_img = np.asanyarray(depth_frame.get_data())
+            # the contact area, 100 x 100 pix
             depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
 
             mass_x, mass_y = np.where(depth_img > 0)
+
+            # if no depth infomation, continue
             if mass_x.size == 0 or mass_y.size == 0:
                 depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
                 self.change_pixmap_signal.emit(depth_img)
                 continue
 
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
+            # calculate the centroid
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
             # print(cent_x, cent_y)
@@ -225,22 +236,23 @@ class VideoThread(QThread):
 
             # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°
+            # calculate the coodinate using the fov
             ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
             ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
             x_dis = math.tan(ang_x) * height
             y_dis = math.tan(ang_y) * height
 
             # print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
+            # send the coodinate signal
             self.position_signal.emit(np.array([y_dis, x_dis, height]))
             
-            # put text and highlight the center
+            # draw the rendering area
             cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
             depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
-
             self.change_pixmap_signal.emit(depth_img)
 
     def stop(self):
-        """Sets run flag to False and waits for thread to finish"""
+        # set run flag to False and waits for thread to finish
         self._run_flag = False
         self.wait()
 
@@ -342,9 +354,9 @@ class MainWindow(QWidget):
         # optmized_para = self.optimizer.get_maximizer()
         optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
 
-        stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
-        radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
-        freq = int(50 + optmized_para[2] * 150)  # wave freq: 50~200Hz
+        stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
+        radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
+        freq = int(50 + optmized_para[2] * 150) # wave freq: 50~200Hz
         amp = optmized_para[3]
         print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
         
@@ -364,9 +376,9 @@ class MainWindow(QWidget):
         t = self.horizontal_slider.value() / 999.0
         optmized_para = self.optimizer.calc_point_from_slider_position(t)
 
-        stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
-        radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
-        freq = int(50 + optmized_para[2] * 150)  # wave freq: 50~200Hz
+        stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
+        radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
+        freq = int(50 + optmized_para[2] * 150) # wave freq: 50~200Hz
         amp = optmized_para[3]
         print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
         
