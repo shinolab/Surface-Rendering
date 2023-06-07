@@ -128,9 +128,9 @@ class AUTDThread(QThread):
             .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
             .build()
 
-        link = Simulator().build()
+        # link = Simulator().build()
         on_lost_func = OnLostFunc(self.on_lost)
-        # link = SOEM().on_lost(on_lost_func).build()
+        link = SOEM().on_lost(on_lost_func).build()
 
         autd = Controller.open(geometry, link)
 
