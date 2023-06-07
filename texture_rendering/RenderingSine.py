@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-25 18:49:34
+LastEditTime: 2023-06-07 15:06:25
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -60,7 +60,7 @@ def run(subscriber, publisher):
 
     radius = 3.0    # radius of STM
     # step = 0.2      # step length (mm)
-    time_step = 0.0015
+    time_step = 0.002
     stm_f = 5.0     # frequency of STM
     theta = 0
     height = 230.   # init x, y, height

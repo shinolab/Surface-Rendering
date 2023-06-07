@@ -10,6 +10,7 @@ from pyautd3.gain import Focus
 from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Sine
 from datetime import timedelta
+import time
 import math
 import pySequentialLineSearch
 import pyrealsense2 as rs
@@ -49,13 +50,13 @@ class SinusoidWidget(QWidget):
 
         width = self.width()
         height = self.height()
-        x_scale = width / (0.04 * math.pi)
+        x_scale = width / (0.3 * math.pi)
         y_scale = height
 
         path = QPainterPath()
         path.moveTo(0, height / 2)
 
-        line_thickness = 5
+        line_thickness = 3
         painter.setPen(QPen(Qt.blue, line_thickness))
         for x in range(width):
             t = x / x_scale
@@ -72,24 +73,44 @@ class SinusoidWidget(QWidget):
 
 class AUTDThread(QThread):
     SLS_para_signal = pyqtSignal(np.ndarray)
+    position_signal = pyqtSignal(np.ndarray)
 
     def __init__(self):
         super().__init__()
-        self.SLS_para_signal.connect(self.handleSignal)
-        dll = ctypes.cdll.LoadLibrary
-        self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
+        self.SLS_para_signal.connect(self.SLSSignal)
+        self.video_thread = VideoThread()
+        self.video_thread.position_signal.connect(self.PositionSignal)
 
-    def handleSignal(self, SLS_para):
+        self._run_flag = True
+
+        self.coordinate = np.array([0., 0., 230.])
+        self.m = Sine(100)
+
+        dll = ctypes.cdll.LoadLibrary
+        self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() +\
+                         '/HighPrecisionTimer.so') 
+
+    @pyqtSlot(np.ndarray)
+    def SLSSignal(self, SLS_para):
         self.stm_f = SLS_para[0]
         self.radius = SLS_para[1]
-        self.freq = SLS_para[2]
-        self.amp = SLS_para[3]
+        freq = SLS_para[2]
+        amp = SLS_para[3]
+        offset = -0.5 * amp + 1
+        self.m = Sine(freq=int(freq), amp=amp, offset=offset)
+    
+    @pyqtSlot(np.ndarray)
+    def PositionSignal(self, coordinate):
+        self.coordinate = coordinate
     
     def on_lost(self, msg: ctypes.c_char_p):
         print(msg.decode('utf-8'), end="")
         os._exit(-1)
 
-    @pyqtSlot(np.ndarray)
+    def stop(self):
+        self._run_flag = False
+        self.wait()
+
     def run(self):
         geometry = Geometry.Builder()\
             .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
@@ -115,7 +136,7 @@ class AUTDThread(QThread):
 
         center = autd.geometry.center + np.array([0., 0., 0.])
 
-        time_step = 0.0015
+        time_step = 0.002
         theta = 0
         height = 230.   # init x, y, height
         x = 0.
@@ -126,39 +147,31 @@ class AUTDThread(QThread):
         print('press ctrl+c to finish...')
 
         try:
-            while True:
+            while self._run_flag:
                 stm_f = self.stm_f
                 radius = self.radius
-                freq = self.freq
-                amp = self.amp
-                offset = -0.5 * amp + 1
 
-                m = Sine(freq=int(freq), amp=amp, offset=offset)
-
+                # ... change the radius and height here
+                x = self.coordinate[0]
+                y = self.coordinate[1]
+                # D435i depth start point: -4.2mm
+                height = self.coordinate[2] - 9 - 4.2
+                
                 # update the focus information
                 p = radius * np.array([np.cos(theta), np.sin(theta), 0])
                 p += np.array([x, y, height])
                 f = Focus(center + p)
-                # tic = time.time()
-                autd.send(m, f, timedelta(microseconds=0))
-                # toc = time.time()
-                # print(toc-tic)
-
-                # ... change the radius and height here
-                # if publisher.poll():
-                #     coordinate = publisher.recv()
-                #     x = coordinate[0]
-                #     y = coordinate[1]
-                #     # height of D435i: 25mm
-                #     # D435i depth start point: -4.2mm
-                #     height = coordinate[2] - 9 - 4.2
+                tic = time.time()
+                autd.send(self.m, f, timedelta(microseconds=0))
+                toc = time.time()
+                print(toc-tic)
 
                 theta += 2 * np.pi * stm_f * time_step
 
-                # tic = time.time()
+                tic = time.time()
                 self.libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
-                # toc = time.time()
-                # print(toc-tic)
+                toc = time.time()
+                print(toc-tic)
 
         except KeyboardInterrupt:
             pass
@@ -170,6 +183,7 @@ class AUTDThread(QThread):
 
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(np.ndarray)
+    position_signal = pyqtSignal(np.ndarray)
 
     def __init__(self):
         super().__init__()
@@ -217,6 +231,7 @@ class VideoThread(QThread):
             y_dis = math.tan(ang_y) * height
 
             # print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
+            self.position_signal.emit(np.array([y_dis, x_dis, height]))
             
             # put text and highlight the center
             cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
@@ -301,6 +316,7 @@ class MainWindow(QWidget):
 
     def closeEvent(self, event):
         self.video_thread.stop()
+        self.autd_thread.stop()
         event.accept()
 
     @pyqtSlot(np.ndarray)
@@ -328,7 +344,7 @@ class MainWindow(QWidget):
 
         stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
         radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
-        freq = 50 + optmized_para[2] * 150  # wave freq: 50~200Hz
+        freq = int(50 + optmized_para[2] * 150)  # wave freq: 50~200Hz
         amp = optmized_para[3]
         print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
         
@@ -350,7 +366,7 @@ class MainWindow(QWidget):
 
         stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
         radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
-        freq = 50 + optmized_para[2] * 150  # wave freq: 50~200Hz
+        freq = int(50 + optmized_para[2] * 150)  # wave freq: 50~200Hz
         amp = optmized_para[3]
         print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
         

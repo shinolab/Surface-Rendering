@@ -1,173 +1,152 @@
-'''
-Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
-Date: 2022-11-22 22:42:58
-LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-24 16:31:45
-Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
-'''
-
-from pyautd3.link import SOEM
+import sys
+import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
+from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
+from PyQt5 import QtGui
+from pyautd3.link import SOEM, OnLostFunc
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
-from pyautd3.stm import FocusSTM
-from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
-from pyautd3.modulation import Static, Sine
-import numpy as np
-import ctypes
-import platform
-import os
+from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3.modulation import Sine
+from datetime import timedelta
+import math
+import pySequentialLineSearch
 import pyrealsense2 as rs
 import cv2
-import math
-from multiprocessing import Process, Pipe
-import time
+import os
+import ctypes
+import platform
 
-# use cpp to get high precision sleep time
-dll = ctypes.cdll.LoadLibrary
-libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
+class SinusoidWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(400, 200)
+        self._amplitude = 1.0
+        self._frequency = 1.0
+        self._offset = 0.0
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(self.backgroundRole(), Qt.white)
+        self.setPalette(palette)
 
-def run(subscriber, publisher):
-    autd = Controller()
+    def setAmplitude(self, amplitude):
+        self._amplitude = amplitude
+        self.update()
 
-    # Multiple AUTD
-    # The arrangement of the AUTDs:
-    # 1 → 2
-    #     ↓
-    # 4 ← 3
-    # (See from the upside)
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
+    def setOffset(self, offset):
+        self._offset = offset
+        self.update()
 
-    # link = Simulator().build()
-    link = SOEM().high_precision(True).build()
+    def setFrequency(self, frequency):
+        self._frequency = frequency
+        self.update()
 
-    if not autd.open(link):
-        print('Failed to open Controller')
-        exit()
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(QPen(Qt.blue, 2))
 
-    autd.check_trials = 50
+        width = self.width()
+        height = self.height()
+        x_scale = width / (0.04 * math.pi)
+        y_scale = height
 
-    autd.send(Clear())
-    autd.send(Synchronize())
+        path = QPainterPath()
+        path.moveTo(0, height / 2)
 
-    print('================================== Firmware information ====================================')
-    firm_info_list = autd.firmware_info_list()
-    for firm in firm_info_list:
-        print(firm)
-    print('============================================================================================')
+        line_thickness = 5
+        painter.setPen(QPen(Qt.blue, line_thickness))
+        for x in range(width):
+            t = x / x_scale
+            y = 0.5 * self._amplitude * math.sin(self._frequency * t) + self._offset
+            path.lineTo(x, height - y * y_scale)
+        painter.drawPath(path)
 
-    center = autd.geometry.center + np.array([0., 0., 0.])
-
-    m = Sine(150)
-
-    radius = 3.0    # radius of STM
-    # step = 0.2      # step length (mm)
-    time_step = 0.0015
-    stm_f = 5.0     # frequency of STM
-    theta = 0
-    height = 230.   # init x, y, height
-    x = 0.
-    y = 0.
-    config = SilencerConfig()
-    autd.send(config)
-
-    print('press ctrl+c to finish...')
-
-    subscriber.close()
-
-    try:
-        # initial output
-        sound_speed = autd.sound_speed
-        stm = FocusSTM(sound_speed)
-        center = autd.geometry.center + np.array([0., 0., height])
-        size = int((1/stm_f)/time_step)
-        for i in range(size):
-            theta = 2.0 * np.pi * i / size
-            p = radius * np.array([np.cos(theta), np.sin(theta), 0])
-            stm.add(center + p)
-        stm.frequency = stm_f
-
-        autd.send(m, stm)
-
-        while True:
-            # update
-            # ... change the radius and height here
-            if publisher.poll():
-                coordinate = publisher.recv()
-                x = coordinate[0]
-                y = coordinate[1]
-                # height of D435i: 25mm
-                # D435i depth start point: -4.2mm
-                height = coordinate[2] - 4 - 4.2
-
-                stm = FocusSTM(sound_speed)
-                center = autd.geometry.center + np.array([x, y, height])
-                size = int((1/stm_f)/time_step)
-                for i in range(size):
-                    theta = 2.0 * np.pi * i / size
-                    p = radius * np.array([np.cos(theta), np.sin(theta), 0])
-                    stm.add(center + p)
-                stm.frequency = stm_f
-
-                autd.send(m, stm)
+        # 绘制坐标轴
+        axis_thickness = 10
+        painter.setPen(QPen(Qt.black, axis_thickness))
+        painter.drawLine(0, height, width, height)
+        painter.drawLine(0, 0, 0, height)
 
 
+class AUTDThread(QThread):
+    SLS_para_signal = pyqtSignal(np.ndarray)
 
-    except KeyboardInterrupt:
-        pass
+    def __init__(self):
+        super().__init__()
+        self.SLS_para_signal.connect(self.handleSignal)
+        dll = ctypes.cdll.LoadLibrary
+        self.libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + '/HighPrecisionTimer.so') 
 
-    print('finish.')
-    autd.send(Stop())
-    publisher.close()
+    @pyqtSlot(np.ndarray)
+    def handleSignal(self, SLS_para):
+        self._previousValue = SLS_para
+        self.stm_f = SLS_para[0]
+        self.radius = SLS_para[1]
+        self.freq = SLS_para[2]
+        self.amp = SLS_para[3]
+        print(SLS_para)
+    
+    def on_lost(self, msg: ctypes.c_char_p):
+        print(msg.decode('utf-8'), end="")
+        os._exit(-1)
 
-    autd.dispose()
+    @pyqtSlot(np.ndarray)
+    def run(self):
+        try:
+            while True:
+                stm_f = self.stm_f
+                radius = self.radius
+                freq = self.freq
+                amp = self.amp
+                offset = -0.5 * amp + 1
+
+        except KeyboardInterrupt:
+            pass
+
+        print('finish.')
 
 
-def get_finger_distance(subscriber, publisher):
-    # Initialization
-    pipeline = rs.pipeline()
-    config = rs.config()
+class VideoThread(QThread):
+    change_pixmap_signal = pyqtSignal(np.ndarray)
 
-    # Decide resolutions for both depth and rgb streaming
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    def __init__(self):
+        super().__init__()
+        self._run_flag = True
+        self.pipeline = rs.pipeline()
+        self.config = rs.config()
 
-    # Start streaming
-    pipeline.start(config)
+        # Decide resolutions for both depth and rgb streaming
+        self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
-    publisher.close()
+    def run(self):
+        # Start streaming
+        self.pipeline.start(self.config)
 
-    try:
-        while True:
-            # Get frameset of color and depth
-            frames = pipeline.wait_for_frames()
-            # frames.get_depth_frame() is a 640x360 depth image
-
-            # Get aligned frames
-            depth_frame = frames.get_depth_frame() # depth_frame is a 640x480 depth image
-
-            # Validate that both frames are valid
+        while self._run_flag:
+            frames = self.pipeline.wait_for_frames()
+            depth_frame = frames.get_depth_frame()
             if not depth_frame:
                 continue
-
+            
             W = depth_frame.get_width()
             H = depth_frame.get_height()
-            
-            # Set the contact area height to 23cm
             filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
             depth_frame = filter.process(depth_frame)
             depth_img = np.asanyarray(depth_frame.get_data())
-            # Set the detect range
             depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
-            
+
             mass_x, mass_y = np.where(depth_img > 0)
             if mass_x.size == 0 or mass_y.size == 0:
+                depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
+                self.change_pixmap_signal.emit(depth_img)
                 continue
 
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
+            # print(cent_x, cent_y)
             height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
@@ -177,39 +156,159 @@ def get_finger_distance(subscriber, publisher):
             x_dis = math.tan(ang_x) * height
             y_dis = math.tan(ang_y) * height
 
-            delta_height = 230. - height
-            radius = 1. + min(30, max(delta_height, 0)) * 0.16
-
-            ang_r = math.atan(radius / height)
-            r_pixel = H * ang_r / math.radians(58 / 2)
-
-            subscriber.send([y_dis, x_dis, height])
+            # print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
             
             # put text and highlight the center
-            cv2.circle(depth_img, (cent_y, cent_x), int(r_pixel), (255, 255, 255), -1)
-
+            cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
             depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
-            cv2.imshow('Detect Area', cv2.flip(depth_img, 1))
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            self.change_pixmap_signal.emit(depth_img)
 
-    finally:
-        # Stop streaming
-        pipeline.stop()
-        cv2.destroyAllWindows()
-        subscriber.close()
+    def stop(self):
+        """Sets run flag to False and waits for thread to finish"""
+        self._run_flag = False
+        self.wait()
+
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Sequential Line Search")
+        self.video_thread = VideoThread()
+        self.autd_thread = AUTDThread()
+
+        self.image_disp_w_h = 320
+
+        self.image_label = QLabel(self)
+        self.image_label.resize(self.image_disp_w_h, self.image_disp_w_h)
+
+        whole_hbox = QHBoxLayout()
+        whole_hbox.addWidget(self.image_label)
+
+        self.horizontal_slider = QSlider(Qt.Horizontal)
+        self.horizontal_slider.setRange(0, 999)
+        self.horizontal_slider.setSliderPosition(0)
+
+        self.vertical_sliders = []
+
+        self.sinusoid_widget = SinusoidWidget()
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.sinusoid_widget)
+
+        horizontal_layout = QHBoxLayout()
+        labels = ["f_STM", "radius", "f_wave", "amplitude"]
+        for i in range(4):
+            vertical_slider = QSlider(Qt.Vertical)
+            vertical_slider.setRange(0, 100)
+            vertical_slider.setEnabled(False)
+            self.vertical_sliders.append(vertical_slider)
+
+            label = QLabel(labels[i])
+
+            vertical_box = QVBoxLayout()
+            vertical_box.addWidget(label, 1, Qt.AlignCenter | Qt.AlignTop)
+            vertical_box.addWidget(vertical_slider, 0, Qt.AlignCenter | Qt.AlignTop)
+
+            horizontal_layout.addLayout(vertical_box)
+
+        layout.addLayout(horizontal_layout)
+        layout.addWidget(self.horizontal_slider)
+
+        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=4)
+
+        self.optimizer.set_hyperparams(kernel_signal_var=0.50,
+                                kernel_length_scale=0.10,
+                                kernel_hyperparams_prior_var=0.10)
+        
+        self.optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
+
+        self.horizontal_slider.valueChanged.connect(lambda value: self.updateValues())
+
+        next_button = QPushButton("Next")
+        next_button.clicked.connect(lambda value: self.updateOptimizer())
+        layout.addWidget(next_button)
+
+        whole_hbox.addLayout(layout)
+        self.setLayout(whole_hbox)
+
+        self.updateValues()
+        # connect its signal to the update_image slot
+        self.video_thread.change_pixmap_signal.connect(self.update_image)
+        # start the thread
+        self.video_thread.start()
+        self.autd_thread.start()
+
+    def closeEvent(self, event):
+        self.video_thread.stop()
+        event.accept()
+
+    @pyqtSlot(np.ndarray)
+    def update_image(self, cv_img):
+        """Updates the image_label with a new opencv image"""
+        qt_img = self.convert_cv_qt(cv_img)
+        self.image_label.setPixmap(qt_img)
+    
+    def convert_cv_qt(self, cv_img):
+        """Convert from an opencv image to QPixmap"""
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        p = convert_to_Qt_format.scaled(self.image_disp_w_h, self.image_disp_w_h, Qt.KeepAspectRatio)
+        return QPixmap.fromImage(p)
+    
+    def updateOptimizer(self):
+        slider_position = self.horizontal_slider.value() / 999.0
+        self.optimizer.submit_feedback_data(slider_position)
+        print('Next')
+
+        # optmized_para = self.optimizer.get_maximizer()
+        optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
+
+        stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
+        radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
+        freq = 50 + optmized_para[2] * 150  # wave freq: 50~200Hz
+        amp = optmized_para[3]
+        print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
+        
+        self.autd_thread.SLS_para_signal.emit(np.array([stm_freq, radius, freq, amp]))
+
+        offset = -0.5 * amp + 1
+        self.sinusoid_widget.setAmplitude(amp)
+        self.sinusoid_widget.setOffset(offset)
+        self.sinusoid_widget.setFrequency(freq)
+
+        i = 0
+        for vertical_slider in self.vertical_sliders:
+            vertical_slider.setValue(int(optmized_para[i] * vertical_slider.maximum()))
+            i += 1
+
+    def updateValues(self):
+        t = self.horizontal_slider.value() / 999.0
+        optmized_para = self.optimizer.calc_point_from_slider_position(t)
+
+        stm_freq = 3 + optmized_para[0] * 7 # STM_freq: 3~10Hz
+        radius = 2 + optmized_para[1] * 3   # STM radius: 2~5mm
+        freq = 50 + optmized_para[2] * 150  # wave freq: 50~200Hz
+        amp = optmized_para[3]
+        print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
+        
+        self.autd_thread.SLS_para_signal.emit(np.array([stm_freq, radius, freq, amp]))
+
+        offset = -0.5 * amp + 1
+        self.sinusoid_widget.setAmplitude(amp)
+        self.sinusoid_widget.setOffset(offset)
+        self.sinusoid_widget.setFrequency(freq)
+
+        i = 0
+        for vertical_slider in self.vertical_sliders:
+            vertical_slider.setValue(int(optmized_para[i] * vertical_slider.maximum()))
+            i += 1
 
 
 if __name__ == '__main__':
-    subscriber, publisher = Pipe()
-
-    p_main = Process(target=run, args=(subscriber, publisher))
-    p_main.start()
-
-    get_finger_distance(subscriber, publisher)
-
-    publisher.close()
-    subscriber.close()
-
-    p_main.join()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
