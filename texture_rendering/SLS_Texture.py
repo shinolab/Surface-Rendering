@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-07 17:18:39
+LastEditTime: 2023-06-09 01:09:36
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -317,7 +317,8 @@ class MainWindow(QWidget):
         
         self.optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-        self.horizontal_slider.valueChanged.connect(self.updateValues)
+        self.horizontal_slider.valueChanged.connect(lambda value: 
+                                                    self.updateValues(_update_optimizer_flag=False))
 
         next_button = QPushButton("Next")
         next_button.clicked.connect(lambda value: self.updateValues(_update_optimizer_flag=True))
@@ -326,7 +327,7 @@ class MainWindow(QWidget):
         whole_hbox.addLayout(layout)
         self.setLayout(whole_hbox)
 
-        self.updateValues()
+        self.updateValues(_update_optimizer_flag=False)
         # connect its signal to the update_image slot
         self.video_thread.change_pixmap_signal.connect(self.update_image)
         # start the thread
@@ -353,7 +354,7 @@ class MainWindow(QWidget):
         p = convert_to_Qt_format.scaled(self.image_disp_w_h, self.image_disp_w_h, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
 
-    def updateValues(self, _update_optimizer_flag=False):
+    def updateValues(self, _update_optimizer_flag):
         slider_position = self.horizontal_slider.value() / 999.0
 
         if _update_optimizer_flag:

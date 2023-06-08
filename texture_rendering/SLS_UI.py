@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-01 16:46:22
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-09 00:23:58
+LastEditTime: 2023-06-09 01:06:32
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -107,16 +107,17 @@ class MainWindow(QWidget):
         
         self.optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-        self.horizontal_slider.valueChanged.connect(self.updateValues)
+        self.horizontal_slider.valueChanged.connect(lambda value: 
+                                                    self.updateValues(_update_optimizer_flag=False))
 
         next_button = QPushButton("Next")
         next_button.clicked.connect(lambda value: self.updateValues(_update_optimizer_flag=True))
         layout.addWidget(next_button)
         self.setLayout(layout)
 
-        self.updateValues()
+        self.updateValues(_update_optimizer_flag=False)
 
-    def updateValues(self, _update_optimizer_flag=False):
+    def updateValues(self, _update_optimizer_flag):
         slider_position = self.horizontal_slider.value() / 999.0
 
         if _update_optimizer_flag:
