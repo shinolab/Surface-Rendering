@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-09 01:09:36
+LastEditTime: 2023-06-09 13:38:52
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -11,8 +11,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QSlider, QVBoxLayout, QHBoxLa
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
 from PyQt5 import QtGui
-from pyautd3.link import SOEM, OnLostFunc
-from pyautd3.link import Simulator
+from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
 from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Sine
@@ -135,9 +134,15 @@ class AUTDThread(QThread):
             .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
             .build()
 
+        # Simulator
         # link = Simulator().build()
-        on_lost_func = OnLostFunc(self.on_lost)
-        link = SOEM().on_lost(on_lost_func).build()
+
+        # TwinCAT
+        link = TwinCAT().build()
+        
+        # SOEM
+        # on_lost_func = OnLostFunc(self.on_lost)
+        # link = SOEM().on_lost(on_lost_func).build()
 
         autd = Controller.open(geometry, link)
 
