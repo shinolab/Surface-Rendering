@@ -1,8 +1,8 @@
 '''
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
-LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-07 16:11:41
+LastEditors: Mingxin
+LastEditTime: 2023-06-24 17:08:26
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -21,6 +21,7 @@ import math
 from multiprocessing import Process, Pipe
 import time
 from datetime import timedelta
+from math import pi
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
@@ -31,11 +32,18 @@ def on_lost(msg: ctypes.c_char_p):
     os._exit(-1)
 
 def run(subscriber, publisher):
+    # geometry = Geometry.Builder()\
+    #     .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+    #     .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
+    #     .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+    #     .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+    #     .build()
+    
     geometry = Geometry.Builder()\
-        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-        .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+        .add_device([0., 0., 0.], [0., 0., 0.])\
+        .add_device([DEVICE_WIDTH, 0., 0.], [0., -pi/3, 0.])\
+        .add_device([DEVICE_WIDTH, -DEVICE_HEIGHT - 25, 0.], [0., -pi/3, 0.])\
+        .add_device([0., -DEVICE_HEIGHT - 25, 0.], [0., 0., 0.])\
         .build()
 
     # link = Simulator().build()
