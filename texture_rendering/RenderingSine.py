@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin
-LastEditTime: 2023-06-24 17:09:49
+LastEditTime: 2023-06-24 17:11:18
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -41,8 +41,8 @@ def run(subscriber, publisher):
     
     geometry = Geometry.Builder()\
         .add_device([0., 0., 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH, 0., 0.], [0., -pi/3, 0.])\
-        .add_device([DEVICE_WIDTH, -DEVICE_HEIGHT - 25, 0.], [0., -pi/3, 0.])\
+        .add_device([DEVICE_WIDTH, 0., 0.], [0., -pi/6, 0.])\
+        .add_device([DEVICE_WIDTH, -DEVICE_HEIGHT - 25, 0.], [0., -pi/6, 0.])\
         .add_device([0., -DEVICE_HEIGHT - 25, 0.], [0., 0., 0.])\
         .build()
 
