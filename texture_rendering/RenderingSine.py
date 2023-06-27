@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-07 16:11:41
+LastEditTime: 2023-06-27 15:11:46
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -140,6 +140,8 @@ def get_finger_distance(subscriber, publisher):
             if not depth_frame:
                 continue
 
+            depth_intrin = depth_frame.profile.as_video_stream_profile().intrinsics
+
             W = depth_frame.get_width()
             H = depth_frame.get_height()
             
@@ -158,17 +160,26 @@ def get_finger_distance(subscriber, publisher):
             cent_x = int(np.average(mass_x))
             cent_y = int(np.average(mass_y))
             # print(cent_x, cent_y)
-            height = depth_img[cent_x, cent_y]
+            # height = depth_img[cent_x, cent_y]
+
+            x = (cent_x - 50) + (W / 2)
+            y = (cent_y - 50) + (H / 2)            
+
+            height = depth_frame.get_distance(x, y)  # unit: m
+            camera_coordinate = rs.rs2_deproject_pixel_to_point(depth_intrin, [x, y], height)
 
             # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°
-            ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
-            ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
-            x_dis = math.tan(ang_x) * height
-            y_dis = math.tan(ang_y) * height
+            # ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
+            # ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
+            # x_dis = math.tan(ang_x) * height
+            # y_dis = math.tan(ang_y) * height
 
-            print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
-            subscriber.send([y_dis, x_dis, height])
+            # print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
+            # subscriber.send([y_dis, x_dis, height])
+
+            print(camera_coordinate)
+            subscriber.send(camera_coordinate)
             
             # put text and highlight the center
             cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)
