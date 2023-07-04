@@ -21,8 +21,8 @@ if __name__ == '__main__':
     W_cos = cos(pi/12) * DEVICE_WIDTH
     
     geometry = Geometry.Builder()\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT, 0.], [pi, pi/12, 0.])\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), 0., 0.], [pi, pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 20, 0.], [pi, pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos),  - 20, 0.], [pi, pi/12, 0.])\
         .add_device([-W_cos + (DEVICE_WIDTH - W_cos), 0., 0.], [0., pi/12, 0.])\
         .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT, 0.], [0., pi/12, 0.])\
         .build()

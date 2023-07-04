@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 18:25:17
+LastEditTime: 2023-07-04 21:50:40
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -41,8 +41,8 @@ def run(subscriber, publisher):
     W_cos = cos(pi/12) * DEVICE_WIDTH
     
     geometry = Geometry.Builder()\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT, 0.], [pi, pi/12, 0.])\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), 0., 0.], [pi, pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 20, 0.], [pi, pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos),  - 20, 0.], [pi, pi/12, 0.])\
         .add_device([-W_cos + (DEVICE_WIDTH - W_cos), 0., 0.], [0., pi/12, 0.])\
         .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT, 0.], [0., pi/12, 0.])\
         .build()
