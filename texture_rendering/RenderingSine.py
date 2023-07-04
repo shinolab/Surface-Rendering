@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-27 15:14:48
+LastEditTime: 2023-07-04 17:43:08
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -17,11 +17,10 @@ import platform
 import os
 import pyrealsense2 as rs
 import cv2
-import math
 from multiprocessing import Process, Pipe
 import time
 from datetime import timedelta
-from math import pi
+from math import pi, cos
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
@@ -39,11 +38,13 @@ def run(subscriber, publisher):
     #     .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
     #     .build()
     
+    W_cos = cos(pi/12) * DEVICE_WIDTH
+    
     geometry = Geometry.Builder()\
-        .add_device([0., 0., 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH, 0., 0.], [0., -pi/6, 0.])\
-        .add_device([DEVICE_WIDTH, -DEVICE_HEIGHT - 25, 0.], [0., -pi/6, 0.])\
-        .add_device([0., -DEVICE_HEIGHT - 25, 0.], [0., 0., 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT, 0.], [pi, pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), 0., 0.], [pi, pi/12, 0.])\
+        .add_device([-W_cos + (DEVICE_WIDTH - W_cos), 0., 0.], [0., pi/12, 0.])\
+        .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT, 0.], [0., pi/12, 0.])\
         .build()
 
     # link = Simulator().build()
@@ -71,7 +72,7 @@ def run(subscriber, publisher):
     time_step = 0.002
     stm_f = 5.0     # frequency of STM
     theta = 0
-    height = 230.   # init x, y, height
+    height = 280.   # init x, y, height
     x = 0.
     y = 0.
     config = SilencerConfig()
@@ -154,7 +155,7 @@ def get_finger_distance(subscriber, publisher):
             H = depth_frame.get_height()
             
             # Set the contact area height to 23cm
-            filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
+            filter = rs.threshold_filter(min_dist=0, max_dist=0.3)
             depth_frame = filter.process(depth_frame)
             depth_img = np.asanyarray(depth_frame.get_data())
             # Set the detect range
@@ -170,11 +171,13 @@ def get_finger_distance(subscriber, publisher):
             # print(cent_x, cent_y)
             # height = depth_img[cent_x, cent_y]
 
-            x = (cent_x - 50) + (W / 2)
-            y = (cent_y - 50) + (H / 2)            
+            x = int((cent_x - 50) + (W / 2))
+            y = int((cent_y - 50) + (H / 2))            
 
+            depth_frame = depth_frame.as_depth_frame()
             height = depth_frame.get_distance(x, y)  # unit: m
             camera_coordinate = rs.rs2_deproject_pixel_to_point(depth_intrin, [x, y], height)
+            camera_coordinate = [item * 1000 for item in camera_coordinate] # m to mm
 
             # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°

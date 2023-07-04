@@ -127,11 +127,13 @@ class AUTDThread(QThread):
         self.wait()
 
     def run(self):
+        W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
+    
         geometry = Geometry.Builder()\
-            .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-            .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-            .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-            .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
+            .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT, 0.], [math.pi, math.pi/12, 0.])\
+            .add_device([W_cos - (DEVICE_WIDTH - W_cos), 0., 0.], [math.pi, math.pi/12, 0.])\
+            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), 0., 0.], [0., math.pi/12, 0.])\
+            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT, 0.], [0., math.pi/12, 0.])\
             .build()
 
         # Simulator
