@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-05 11:41:56
+LastEditTime: 2023-07-05 17:02:35
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -130,21 +130,21 @@ class AUTDThread(QThread):
         W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
     
         geometry = Geometry.Builder()\
-            .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10, 0.], [math.pi, math.pi/12, 0.])\
-            .add_device([W_cos - (DEVICE_WIDTH - W_cos), -10., 0.], [math.pi, math.pi/12, 0.])\
-            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), 0., 0.], [0., math.pi/12, 0.])\
-            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT, 0.], [0., math.pi/12, 0.])\
+            .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [math.pi, math.pi/12, 0.])\
+            .add_device([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [math.pi, math.pi/12, 0.])\
+            .add_device([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., math.pi/12, 0.])\
+            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., math.pi/12, 0.])\
             .build()
 
         # Simulator
         # link = Simulator().build()
 
         # TwinCAT
-        link = TwinCAT().build()
+        # link = TwinCAT().build()
         
         # SOEM
-        # on_lost_func = OnLostFunc(self.on_lost)
-        # link = SOEM().on_lost(on_lost_func).build()
+        on_lost_func = OnLostFunc(self.on_lost)
+        link = SOEM().on_lost(on_lost_func).build()
 
         autd = Controller.open(geometry, link)
 
