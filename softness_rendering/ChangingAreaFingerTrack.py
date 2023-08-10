@@ -2,14 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-17 18:04:38
+LastEditTime: 2023-08-10 15:07:41
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
-from pyautd3.link import SOEM
-from pyautd3.link import Simulator
+from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
-from pyautd3 import Controller, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
@@ -29,22 +28,32 @@ libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + 
 W = 640
 H = 480
 
-def run(subscriber, publisher):
-    autd = Controller()
+def on_lost(msg: ctypes.c_char_p):
+    print(msg.decode('utf-8'), end="")
+    os._exit(-1)
 
+def run(subscriber, publisher):
     # Multiple AUTD
     # The arrangement of the AUTDs:
     # 1 → 2
     #     ↓
     # 4 ← 3
     # (See from the upside)
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
-    autd.geometry.add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])
+
+    W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
+
+    geometry = Geometry.Builder()\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [math.pi, math.pi/12, 0.])\
+        .add_device([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [math.pi, math.pi/12, 0.])\
+        .add_device([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., math.pi/12, 0.])\
+        .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., math.pi/12, 0.])\
+        .build()
 
     # link = Simulator().build()
-    link = SOEM().high_precision(True).build()
+    on_lost_func = OnLostFunc(on_lost)
+    link = SOEM().on_lost(on_lost_func).build()
+
+    autd = Controller.open(geometry, link)
 
     if not autd.open(link):
         print('Failed to open Controller')
