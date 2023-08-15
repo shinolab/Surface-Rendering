@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-05 17:02:35
+LastEditTime: 2023-08-15 16:50:49
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -13,11 +13,12 @@ from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
 from PyQt5 import QtGui
 from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
-from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import AUTD3, Controller, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Sine
 from datetime import timedelta
 import time
 import math
+from math import pi
 import pySequentialLineSearch
 import pyrealsense2 as rs
 import cv2
@@ -129,26 +130,20 @@ class AUTDThread(QThread):
     def run(self):
         W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
     
-        geometry = Geometry.Builder()\
-            .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [math.pi, math.pi/12, 0.])\
-            .add_device([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [math.pi, math.pi/12, 0.])\
-            .add_device([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., math.pi/12, 0.])\
-            .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., math.pi/12, 0.])\
-            .build()
-
-        # Simulator
-        # link = Simulator().build()
-
-        # TwinCAT
-        # link = TwinCAT().build()
-        
-        # SOEM
         on_lost_func = OnLostFunc(self.on_lost)
-        link = SOEM().on_lost(on_lost_func).build()
 
-        autd = Controller.open(geometry, link)
+        autd = (
+            Controller.builder()
+            .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [pi, pi/12, 0.]))
+            .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.]))
+            .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
+            .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
+            .advanced_mode()
+            .open_with(Simulator(8080))
+            # .open_with(SOEM().with_on_lost(on_lost_func))
+            # .open_with(TwinCAT())
+        )
 
-        autd.send(Clear())
         autd.send(Synchronize())
 
         print('================================== Firmware information ====================================')
@@ -199,7 +194,7 @@ class AUTDThread(QThread):
 
         print('finish.')
         autd.send(Stop())
-        autd.dispose()
+        autd.close()
 
 
 class VideoThread(QThread):

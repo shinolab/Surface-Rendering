@@ -2,14 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-05 17:06:38
+LastEditTime: 2023-08-15 16:33:06
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
-from pyautd3.link import SOEM, OnLostFunc
-from pyautd3.link import Simulator
+from pyautd3.link import SOEM, OnLostFunc, TwinCAT, Simulator
 from pyautd3.gain import Focus
-from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import Controller, AUTD3, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
@@ -31,29 +30,22 @@ def on_lost(msg: ctypes.c_char_p):
     os._exit(-1)
 
 def run(subscriber, publisher):
-    # geometry = Geometry.Builder()\
-    #     .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-    #     .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2 + 12.5, 0.], [0., 0., 0.])\
-    #     .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-    #     .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2 - 12.5, 0.], [0., 0., 0.])\
-    #     .build()
-    
     W_cos = cos(pi/12) * DEVICE_WIDTH
+
+    on_lost_func = OnLostFunc(on_lost)
     
-    geometry = Geometry.Builder()\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [pi, pi/12, 0.])\
-        .add_device([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.])\
-        .add_device([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.])\
-        .add_device([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.])\
-        .build()
+    autd = (
+        Controller.builder()
+        .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [pi, pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
+        .advanced_mode()
+        .open_with(Simulator(8080))
+        # .open_with(SOEM().with_on_lost(on_lost_func))
+        # .open_with(TwinCAT())
+    )
 
-    link = Simulator().build()
-    # on_lost_func = OnLostFunc(on_lost)
-    # link = SOEM().on_lost(on_lost_func).build()
-
-    autd = Controller.open(geometry, link)
-
-    autd.send(Clear())
     autd.send(Synchronize())
 
     print('================================== Firmware information ====================================')
@@ -120,7 +112,7 @@ def run(subscriber, publisher):
     autd.send(Stop())
     publisher.close()
 
-    autd.dispose()
+    autd.close()
 
 
 def get_finger_distance(subscriber, publisher):
