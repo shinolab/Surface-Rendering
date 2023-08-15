@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-15 16:50:49
+LastEditTime: 2023-08-15 17:52:14
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -14,7 +14,7 @@ from PyQt5 import QtGui
 from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
 from pyautd3 import AUTD3, Controller, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
-from pyautd3.modulation import Sine
+from pyautd3.modulation import Fourier, Sine
 from datetime import timedelta
 import time
 import math
@@ -32,9 +32,10 @@ class SinusoidWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(400, 200)
-        self._amplitude = 1.0
-        self._frequency = 1.0
-        self._offset = 0.0
+        self._amplitude = [1.0, 1.0, 1.0]
+        self._frequency = [1.0, 1.0, 1.0]
+        self._phase = [0.0, 0.0, 0.0]
+        self._offset = [0.5, 0.5, 0.5]
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(self.backgroundRole(), Qt.white)
@@ -65,11 +66,14 @@ class SinusoidWidget(QWidget):
         path = QPainterPath()
         path.moveTo(0, height / 2)
 
-        line_thickness = 3
+        line_thickness = 1
         painter.setPen(QPen(Qt.blue, line_thickness))
         for x in range(width):
             t = x / x_scale
-            y = 0.5 * self._amplitude * math.sin(self._frequency * t) + self._offset
+            y = 0.5 * self._amplitude[0] * math.sin(self._frequency[0] * t + self._phase[0]) + self._offset[0]\
+              + 0.5 * self._amplitude[1] * math.sin(self._frequency[1] * t + self._phase[1]) + self._offset[1]\
+              + 0.5 * self._amplitude[2] * math.sin(self._frequency[2] * t + self._phase[2]) + self._offset[2]
+            y = y / 3
             path.lineTo(x, height - y * y_scale)
         painter.drawPath(path)
 
@@ -108,10 +112,11 @@ class AUTDThread(QThread):
     def SLSSignal(self, SLS_para):
         self.stm_f = SLS_para[0]
         self.radius = SLS_para[1]
-        freq = SLS_para[2]
-        amp = SLS_para[3]
-        offset = -0.5 * amp + 1
-        self.m = Sine(freq=int(freq), amp=amp, offset=offset)
+
+        self.m = Fourier().add_component(Sine(freq=int(SLS_para[2])).with_amp(SLS_para[3]).with_phase(SLS_para[4]))\
+                          .add_component(Sine(freq=int(SLS_para[5])).with_amp(SLS_para[6]).with_phase(SLS_para[7]))\
+                          .add_component(Sine(freq=int(SLS_para[8])).with_amp(SLS_para[9]).with_phase(SLS_para[10]))
+
     
     # slot function to accept coordinates
     @pyqtSlot(np.ndarray)
@@ -293,8 +298,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.sinusoid_widget)
 
         horizontal_layout = QHBoxLayout()
-        labels = ["f_STM", "radius", "f_wave", "amplitude"]
-        for i in range(4):
+        labels = ["F_STM", "R", "F_low", "A_low", "P_low", "F_mid", "A_mid", "P_mid", "F_high", "A_high", "P_high"]
+        for i in range(11):
             vertical_slider = QSlider(Qt.Vertical)
             vertical_slider.setRange(0, 100)
             vertical_slider.setEnabled(False)
@@ -311,7 +316,7 @@ class MainWindow(QWidget):
         layout.addLayout(horizontal_layout)
         layout.addWidget(self.horizontal_slider)
 
-        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=4)
+        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=11)
 
         self.optimizer.set_hyperparams(kernel_signal_var=0.50,
                                 kernel_length_scale=0.10,
@@ -367,16 +372,31 @@ class MainWindow(QWidget):
 
         stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
         radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
-        freq = int(50 + optmized_para[2] * 150) # wave freq: 50~200Hz
-        amp = optmized_para[3]
-        print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
-        
-        self.autd_thread.SLS_para_signal.emit(np.array([stm_freq, radius, freq, amp]))
 
-        offset = -0.5 * amp + 1
-        self.sinusoid_widget.setAmplitude(amp)
-        self.sinusoid_widget.setOffset(offset)
-        self.sinusoid_widget.setFrequency(freq)
+        freq_l = int(1 + optmized_para[2] * 7)
+        amp_l = optmized_para[3]
+        phase_l = optmized_para[4] * 2 * math.pi
+
+        freq_m = int(25 + optmized_para[5] * 40)
+        amp_m = optmized_para[6]
+        phase_m = optmized_para[7] * 2 * math.pi
+
+        freq_h = int(200 + optmized_para[8] * 250)
+        amp_h = optmized_para[9]
+        phase_h = optmized_para[10] * 2 * math.pi
+
+        # print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
+        
+        self.autd_thread.SLS_para_signal.emit(np.array([stm_freq, radius, 
+                                                        freq_l, amp_l, phase_l,
+                                                        freq_m, amp_m, phase_m,
+                                                        freq_h, amp_h, phase_h]))
+
+        # offset = -0.5 * amp + 1
+        self.sinusoid_widget.setAmplitude([amp_l, amp_m, amp_h])
+        # self.sinusoid_widget.setOffset(offset)
+        self.sinusoid_widget.setFrequency([freq_l, freq_m, freq_h])
+        self.sinusoid_widget.setPhase([phase_l, phase_m, phase_h])
 
         i = 0
         for vertical_slider in self.vertical_sliders:
