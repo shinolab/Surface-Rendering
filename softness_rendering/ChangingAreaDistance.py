@@ -2,14 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-05-25 18:46:28
+LastEditTime: 2023-08-16 16:52:06
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from pyautd3.link import SOEM, OnLostFunc
 from pyautd3.link import Simulator
 from pyautd3.gain import Focus
-from pyautd3 import Controller, Geometry, SilencerConfig, Clear, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import Controller, AUTD3, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
@@ -18,6 +18,7 @@ import os
 import pyrealsense2 as rs
 import cv2
 import math
+from math import pi
 from multiprocessing import Process, Pipe
 import time
 from datetime import timedelta
@@ -31,20 +32,22 @@ def on_lost(msg: ctypes.c_char_p):
     os._exit(-1)
 
 def run(subscriber, publisher):
-    geometry = Geometry.Builder()\
-        .add_device([-DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
-        .add_device([-DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
-        .add_device([DEVICE_WIDTH / 2, -DEVICE_HEIGHT / 2, 0.], [0., 0., 0.])\
-        .build()
-    
-    # link = Simulator().build()
+    W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
+
     on_lost_func = OnLostFunc(on_lost)
-    link = SOEM().on_lost(on_lost_func).build()
 
-    autd = Controller.open(geometry, link)
+    autd = (
+        Controller.builder()
+        .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), DEVICE_HEIGHT - 10 + 12.5, 0.], [pi, pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
+        .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
+        .advanced_mode()
+        # .open_with(Simulator(8080))
+        .open_with(SOEM().with_on_lost(on_lost_func))
+        # .open_with(TwinCAT())
+    )
 
-    autd.send(Clear())
     autd.send(Synchronize())
 
     print('================================== Firmware information ====================================')
@@ -55,7 +58,7 @@ def run(subscriber, publisher):
 
     center = autd.geometry.center + np.array([0., 0., 0.])
 
-    m = Static(1.0)
+    m = Static()
     # m = Sine(108)
 
     radius = 3.0    # radius of STM
@@ -82,7 +85,7 @@ def run(subscriber, publisher):
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
             p += np.array([x, y, height])
             f = Focus(center + p)
-            autd.send(m, f, timedelta(microseconds=0))
+            autd.send((m, f), timedelta(microseconds=0))
 
             # ... change the radius and height here
             if publisher.poll():
@@ -111,7 +114,7 @@ def run(subscriber, publisher):
     autd.send(Stop())
     publisher.close()
 
-    autd.dispose()
+    autd.close()
 
 
 def get_finger_distance(subscriber, publisher):

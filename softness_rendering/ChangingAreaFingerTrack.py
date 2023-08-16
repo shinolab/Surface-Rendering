@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-16 14:45:28
+LastEditTime: 2023-08-16 16:46:33
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -52,8 +52,8 @@ def run(subscriber, publisher):
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
         .advanced_mode()
-        .open_with(Simulator(8080))
-        # .open_with(SOEM().with_on_lost(on_lost_func))
+        # .open_with(Simulator(8080))
+        .open_with(SOEM().with_on_lost(on_lost_func))
         # .open_with(TwinCAT())
     )
 
@@ -67,7 +67,7 @@ def run(subscriber, publisher):
 
     center = autd.geometry.center + np.array([0., 0., 0.])
 
-    m = Static(1.0)
+    m = Static()
     # m = Sine(150)
 
     radius = 1.0    # radius of STM
