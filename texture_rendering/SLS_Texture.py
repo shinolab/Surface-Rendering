@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-15 17:52:14
+LastEditTime: 2023-08-16 14:44:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -183,7 +183,7 @@ class AUTDThread(QThread):
                 p += np.array([x, y, height])
                 f = Focus(center + p)
                 tic = time.time()
-                autd.send(self.m, f, timedelta(microseconds=0))
+                autd.send((self.m, f), timeout=timedelta(milliseconds=0))
                 toc = time.time()
                 print(toc-tic)
 

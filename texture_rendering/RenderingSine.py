@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-15 16:33:06
+LastEditTime: 2023-08-16 14:43:40
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -41,8 +41,8 @@ def run(subscriber, publisher):
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
         .advanced_mode()
-        .open_with(Simulator(8080))
-        # .open_with(SOEM().with_on_lost(on_lost_func))
+        # .open_with(Simulator(8080))
+        .open_with(SOEM().with_on_lost(on_lost_func))
         # .open_with(TwinCAT())
     )
 
@@ -81,7 +81,7 @@ def run(subscriber, publisher):
             p += np.array([x, y, height])
             f = Focus(center + p)
             # tic = time.time()
-            autd.send(m, f, timedelta(microseconds=0))
+            autd.send((m, f), timeout=timedelta(milliseconds=0))
             # toc = time.time()
             # print(toc-tic)
 

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-15 16:51:04
+LastEditTime: 2023-08-16 14:45:28
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -92,7 +92,7 @@ def run(subscriber, publisher):
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
             p += np.array([x, y, height])
             f = Focus(center + p)
-            autd.send(m, f)
+            autd.send((m, f))
 
             # ... change the radius and height here
             if publisher.poll():
