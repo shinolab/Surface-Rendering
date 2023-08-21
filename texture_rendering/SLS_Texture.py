@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-16 14:44:59
+LastEditTime: 2023-08-21 17:06:13
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -13,7 +13,7 @@ from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
 from PyQt5 import QtGui
 from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
-from pyautd3 import AUTD3, Controller, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import AUTD3, Controller, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
 from pyautd3.modulation import Fourier, Sine
 from datetime import timedelta
 import time
@@ -47,6 +47,10 @@ class SinusoidWidget(QWidget):
 
     def setOffset(self, offset):
         self._offset = offset
+        self.update()
+
+    def setPhase(self, phase):
+        self._phase = phase
         self.update()
 
     def setFrequency(self, frequency):
@@ -144,8 +148,8 @@ class AUTDThread(QThread):
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
             .advanced_mode()
-            .open_with(Simulator(8080))
-            # .open_with(SOEM().with_on_lost(on_lost_func))
+            # .open_with(Simulator(8080))
+            .open_with(SOEM().with_on_lost(on_lost_func))
             # .open_with(TwinCAT())
         )
 
