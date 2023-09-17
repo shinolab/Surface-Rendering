@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-17 17:13:07
+LastEditTime: 2023-09-17 17:47:10
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -377,15 +377,15 @@ class MainWindow(QWidget):
         stm_freq = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
         radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
 
-        freq_l = int(1 + optmized_para[2] * 7)
+        freq_l = int(1 + optmized_para[2] * 9)
         amp_l = optmized_para[3]
         phase_l = optmized_para[4] * 2 * math.pi
 
-        freq_m = int(25 + optmized_para[5] * 40)
+        freq_m = int(20 + optmized_para[5] * 50)
         amp_m = optmized_para[6]
         phase_m = optmized_para[7] * 2 * math.pi
 
-        freq_h = int(200 + optmized_para[8] * 250)
+        freq_h = int(100 + optmized_para[8] * 250)
         amp_h = optmized_para[9]
         phase_h = optmized_para[10] * 2 * math.pi
 
