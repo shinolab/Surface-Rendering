@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-16 14:43:40
+LastEditTime: 2023-09-17 18:33:54
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from pyautd3.link import SOEM, OnLostFunc, TwinCAT, Simulator
 from pyautd3.gain import Focus
-from pyautd3 import Controller, AUTD3, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
+from pyautd3 import Controller, AUTD3, Geometry, Silencer, Synchronize, Stop
 from pyautd3.modulation import Static, Sine
 import numpy as np
 import ctypes
@@ -16,10 +16,14 @@ import platform
 import os
 import pyrealsense2 as rs
 import cv2
+import math
 from multiprocessing import Process, Pipe
 import time
 from datetime import timedelta
 from math import pi, cos
+
+DEVICE_WIDTH = AUTD3.device_width()
+DEVICE_HEIGHT = AUTD3.device_height()
 
 # use cpp to get high precision sleep time
 dll = ctypes.cdll.LoadLibrary
@@ -40,7 +44,6 @@ def run(subscriber, publisher):
         .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
-        .advanced_mode()
         # .open_with(Simulator(8080))
         .open_with(SOEM().with_on_lost(on_lost_func))
         # .open_with(TwinCAT())
@@ -67,7 +70,7 @@ def run(subscriber, publisher):
     height = 280.   # init x, y, height
     x = 0.
     y = 0.
-    config = SilencerConfig()
+    config = Silencer()
     autd.send(config)
 
     print('press ctrl+c to finish...')
@@ -92,7 +95,7 @@ def run(subscriber, publisher):
                 y = coordinate[1]
                 # height of D435i: 25mm
                 # D435i depth start point: -4.2mm
-                height = coordinate[2] - 9 - 4.2
+                height = coordinate[2] - 12 - 4.2
 
             theta += 2 * np.pi * stm_f * time_step
 
@@ -168,21 +171,21 @@ def get_finger_distance(subscriber, publisher):
 
             depth_frame = depth_frame.as_depth_frame()
             height = depth_frame.get_distance(x, y)  # unit: m
-            camera_coordinate = rs.rs2_deproject_pixel_to_point(depth_intrin, [x, y], height)
-            camera_coordinate = [item * 1000 for item in camera_coordinate] # m to mm
+            # camera_coordinate = rs.rs2_deproject_pixel_to_point(depth_intrin, [x, y], height)
+            # camera_coordinate = [item * 1000 for item in camera_coordinate] # m to mm
+            # print(camera_coordinate)
+            # subscriber.send(camera_coordinate)
 
             # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°
-            # ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
-            # ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
-            # x_dis = math.tan(ang_x) * height
-            # y_dis = math.tan(ang_y) * height
+            ang_x = math.radians((cent_x - 50) / (W / 2) * (87 / 2))
+            ang_y = math.radians((cent_y - 50) / (H / 2) * (58 / 2))
+            height *= 1000
+            x_dis = math.tan(ang_x) * height
+            y_dis = math.tan(ang_y) * height
 
-            # print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
-            # subscriber.send([y_dis, x_dis, height])
-
-            print(camera_coordinate)
-            subscriber.send(camera_coordinate)
+            print('X:', x_dis, 'Y:', y_dis, 'Z:', height)
+            subscriber.send([y_dis, x_dis, height])
             
             # put text and highlight the center
             cv2.circle(depth_img, (cent_y, cent_x), 5, (255, 255, 255), -1)

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-17 17:47:10
+LastEditTime: 2023-09-17 18:14:33
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -163,7 +163,9 @@ class AUTDThread(QThread):
 
         center = autd.geometry.center + np.array([0., 0., 0.])
 
-        time_step = 0.008
+        time_step = 0.01
+        send_time = 0.009
+        sleep_time = time_step - send_time
         theta = 0
         config = Silencer()
         autd.send(config)
@@ -180,21 +182,19 @@ class AUTDThread(QThread):
                 y = self.coordinate[1]
                 # D435i depth start point: -4.2 mm
                 # the height difference between the transducer surface and the camera: 9 mm
-                height = self.coordinate[2] - 9 - 4.2
+                height = self.coordinate[2] - 20 - 4.2
                 
                 # update the focus information
                 p = radius * np.array([np.cos(theta), np.sin(theta), 0])
                 p += np.array([x, y, height])
+                print(x, y, height)
                 f = Focus(center + p)
                 tic = time.time()
                 autd.send((self.m, f), timeout=timedelta(milliseconds=0))
-                toc = time.time()
-                # print(toc-tic)
 
                 theta += 2 * np.pi * stm_f * time_step
 
-                tic = time.time()
-                self.libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
+                self.libc.HighPrecisionSleep(ctypes.c_float(sleep_time))  # cpp sleep function
                 toc = time.time()
                 # print(toc-tic)
 
