@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-17 16:48:33
+LastEditTime: 2023-09-17 17:13:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -163,7 +163,7 @@ class AUTDThread(QThread):
 
         center = autd.geometry.center + np.array([0., 0., 0.])
 
-        time_step = 0.002
+        time_step = 0.008
         theta = 0
         config = Silencer()
         autd.send(config)
@@ -189,14 +189,14 @@ class AUTDThread(QThread):
                 tic = time.time()
                 autd.send((self.m, f), timeout=timedelta(milliseconds=0))
                 toc = time.time()
-                print(toc-tic)
+                # print(toc-tic)
 
                 theta += 2 * np.pi * stm_f * time_step
 
                 tic = time.time()
                 self.libc.HighPrecisionSleep(ctypes.c_float(time_step))  # cpp sleep function
                 toc = time.time()
-                print(toc-tic)
+                # print(toc-tic)
 
         except KeyboardInterrupt:
             pass
@@ -374,7 +374,7 @@ class MainWindow(QWidget):
 
         optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
 
-        stm_freq = 3 + optmized_para[0] * 7     # STM_freq: 3~10Hz
+        stm_freq = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
         radius = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
 
         freq_l = int(1 + optmized_para[2] * 7)
