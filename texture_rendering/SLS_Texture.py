@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-17 18:14:33
+LastEditTime: 2023-09-18 17:08:41
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -187,7 +187,7 @@ class AUTDThread(QThread):
                 # update the focus information
                 p = radius * np.array([np.cos(theta), np.sin(theta), 0])
                 p += np.array([x, y, height])
-                print(x, y, height)
+                # print(x, y, height)
                 f = Focus(center + p)
                 tic = time.time()
                 autd.send((self.m, f), timeout=timedelta(milliseconds=0))
