@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-01 16:46:22
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-18 21:07:09
+LastEditTime: 2023-09-18 21:21:18
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -79,10 +79,10 @@ class MainWindow(QWidget):
         layout.addWidget(self.sinusoid_widget)
 
         horizontal_layout = QHBoxLayout()
-        labels = ["F_STM", "R", "20 Hz", "35 Hz", "60 Hz", "100 Hz", 
+        labels = ["20 Hz", "35 Hz", "60 Hz", "100 Hz", 
                   "115 Hz", "130 Hz", "145 Hz", "160 Hz", "185 Hz", "210 Hz", 
                   "235 Hz", "265 Hz", "300 Hz", "450 Hz", "670 Hz", "1000 Hz"]
-        for i in range(18):
+        for i in range(16):
             vertical_slider = QSlider(Qt.Vertical)
             vertical_slider.setRange(0, 100)
             vertical_slider.setEnabled(False)
@@ -99,7 +99,7 @@ class MainWindow(QWidget):
         layout.addLayout(horizontal_layout)
         layout.addWidget(self.horizontal_slider)
 
-        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=18)
+        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=16)
 
         self.optimizer.set_hyperparams(kernel_signal_var=0.50,
                                 kernel_length_scale=0.10,
@@ -126,13 +126,13 @@ class MainWindow(QWidget):
 
         optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
 
-        optmized_para[0] = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
-        optmized_para[1] = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
-        optmized_para[2:19] *= 4
+        # optmized_para[0] = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
+        # optmized_para[1] = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
+        # optmized_para[2:19] *= 4
 
         # print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
         
-        self.sinusoid_widget.setGain(optmized_para[2:19])
+        self.sinusoid_widget.setGain(optmized_para*4)
 
         i = 0
         for vertical_slider in self.vertical_sliders:
