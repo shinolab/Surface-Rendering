@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-18 21:07:44
+LastEditTime: 2023-09-21 02:17:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -28,16 +28,15 @@ import platform
 
 DEVICE_WIDTH = AUTD3.device_width()
 DEVICE_HEIGHT = AUTD3.device_height()
-FREQUENCY_LIST = [20, 35, 60, 100, 115,
-                  130, 145, 160, 185, 210, 
-                  235, 265, 300, 450, 670, 1000]
+FREQUENCY_LIST = [60, 100, 115, 130, 145, 160, 185, 
+                  210, 235, 265, 300, 450, 670, 1000]
 
 # drawing the waveform
 class SinusoidWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(400, 200)
-        self._frequency_gain = [1.0] * 16
+        self._frequency_gain = [1.0] * 14
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(self.backgroundRole(), Qt.white)
@@ -65,9 +64,9 @@ class SinusoidWidget(QWidget):
         for x in range(width):
             t = x / x_scale
             y = 0
-            for i in range(16):
+            for i in range(14):
                 y += 0.5 * self._frequency_gain[i] * math.sin(FREQUENCY_LIST[i] * t) + 0.5
-            y = y / 16
+            y = y / 14
             path.lineTo(x, height - y * y_scale)
         painter.drawPath(path)
 
@@ -108,7 +107,7 @@ class AUTDThread(QThread):
         self.radius = SLS_para[1]
 
         self.m = Fourier()
-        for i in range(2, 18):
+        for i in range(2, 16):
             self.m.add_component(Sine(freq=FREQUENCY_LIST[i-2]).with_amp(SLS_para[i]))
     
     # slot function to accept coordinates
@@ -137,8 +136,8 @@ class AUTDThread(QThread):
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
             # .advanced_mode()
-            # .open_with(Simulator(8080))
-            .open_with(SOEM().with_on_lost(on_lost_func))
+            .open_with(Simulator(8080))
+            # .open_with(SOEM().with_on_lost(on_lost_func))
             # .open_with(TwinCAT())
         )
 
@@ -266,7 +265,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Sequential Line Search")
-        self.video_thread = VideoThread()
+        # self.video_thread = VideoThread()
         self.autd_thread = AUTDThread()
 
         self.image_disp_w_h = 320
@@ -289,10 +288,10 @@ class MainWindow(QWidget):
         layout.addWidget(self.sinusoid_widget)
 
         horizontal_layout = QHBoxLayout()
-        labels = ["F_STM", "R", "20 Hz", "35 Hz", "60 Hz", "100 Hz", 
-                  "115 Hz", "130 Hz", "145 Hz", "160 Hz", "185 Hz", "210 Hz", 
-                  "235 Hz", "265 Hz", "300 Hz", "450 Hz", "670 Hz", "1000 Hz"]
-        for i in range(18):
+        labels = ["F_STM", "R", "60 Hz", "100 Hz", "115 Hz", "130 Hz", 
+                  "145 Hz", "160 Hz", "185 Hz", "210 Hz",  "235 Hz", 
+                  "265 Hz", "300 Hz", "450 Hz", "670 Hz", "1000 Hz"]
+        for i in range(16):
             vertical_slider = QSlider(Qt.Vertical)
             vertical_slider.setRange(0, 100)
             vertical_slider.setEnabled(False)
@@ -309,7 +308,7 @@ class MainWindow(QWidget):
         layout.addLayout(horizontal_layout)
         layout.addWidget(self.horizontal_slider)
 
-        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=18)
+        self.optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(num_dims=16)
 
         self.optimizer.set_hyperparams(kernel_signal_var=0.50,
                                 kernel_length_scale=0.10,
@@ -329,13 +328,13 @@ class MainWindow(QWidget):
 
         self.updateValues(_update_optimizer_flag=False)
         # connect its signal to the update_image slot
-        self.video_thread.change_pixmap_signal.connect(self.update_image)
+        # self.video_thread.change_pixmap_signal.connect(self.update_image)
         # start the thread
-        self.video_thread.start()
+        # self.video_thread.start()
         self.autd_thread.start()
 
     def closeEvent(self, event):
-        self.video_thread.stop()
+        # self.video_thread.stop()
         self.autd_thread.stop()
         event.accept()
 
@@ -363,19 +362,19 @@ class MainWindow(QWidget):
 
         optmized_para = self.optimizer.calc_point_from_slider_position(slider_position)
 
-        optmized_para[0] = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
-        optmized_para[1] = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
-        optmized_para[2:19] *= 4                           # Gain of frequency components: 0~4
-
-        # print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
-        
-        self.autd_thread.SLS_para_signal.emit(np.array(optmized_para))
-        self.sinusoid_widget.setGain(optmized_para[2:19])
-
         i = 0
         for vertical_slider in self.vertical_sliders:
             vertical_slider.setValue(int(optmized_para[i] * vertical_slider.maximum()))
             i += 1
+
+        optmized_para[0] = 3 + optmized_para[0] * 17     # STM_freq: 3~20Hz
+        optmized_para[1] = 2 + optmized_para[1] * 3       # STM radius: 2~5mm
+        optmized_para[2:17] *= 4                           # Gain of frequency components: 0~4
+
+        # print('f_STM:', stm_freq, '\tradius: ', radius, '\tf_wave: ', freq, '\tamp: ', amp)
+        
+        self.autd_thread.SLS_para_signal.emit(np.array(optmized_para))
+        self.sinusoid_widget.setGain(optmized_para[2:17])
 
 
 if __name__ == '__main__':
