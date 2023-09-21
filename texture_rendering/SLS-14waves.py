@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-21 17:24:07
+LastEditTime: 2023-09-21 17:39:04
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -175,14 +175,14 @@ class AUTDThread(QThread):
                 p += np.array([x, y, height])
                 # print(x, y, height)
                 f = Focus(center + p)
-                tic = time.time()
+                # tic = time.time()
                 autd.send((self.m, f), timeout=timedelta(milliseconds=0))
 
                 theta += 2 * np.pi * stm_f * time_step
 
                 self.libc.HighPrecisionSleep(ctypes.c_float(sleep_time))  # cpp sleep function
-                toc = time.time()
-                print(toc-tic)
+                # toc = time.time()
+                # print(toc-tic)
 
         except KeyboardInterrupt:
             pass
