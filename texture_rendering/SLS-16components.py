@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-21 14:39:00
+LastEditTime: 2023-09-21 14:43:36
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -92,7 +92,7 @@ class AUTDThread(QThread):
         self._run_flag = True
 
         # initial parameters
-        self.coordinate = np.array([0., 0., 230.])
+        self.coordinate = np.array([0., 0., 280.])
         self.m = Sine(100)
 
         # import the HighPrecisionSleep() method
