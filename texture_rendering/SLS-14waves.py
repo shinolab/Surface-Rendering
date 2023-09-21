@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-21 14:43:36
+LastEditTime: 2023-09-21 17:24:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -149,8 +149,8 @@ class AUTDThread(QThread):
 
         center = autd.geometry.center + np.array([0., 0., 0.])
 
-        time_step = 0.01
-        send_time = 0.009
+        time_step = 0.003
+        send_time = 0.0027
         sleep_time = time_step - send_time
         theta = 0
         config = Silencer()
@@ -182,7 +182,7 @@ class AUTDThread(QThread):
 
                 self.libc.HighPrecisionSleep(ctypes.c_float(sleep_time))  # cpp sleep function
                 toc = time.time()
-                # print(toc-tic)
+                print(toc-tic)
 
         except KeyboardInterrupt:
             pass
