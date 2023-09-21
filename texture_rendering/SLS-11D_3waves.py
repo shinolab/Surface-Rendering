@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-18 17:08:41
+LastEditTime: 2023-09-21 15:00:02
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -279,7 +279,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Sequential Line Search")
-        self.video_thread = VideoThread()
+        # self.video_thread = VideoThread()
         self.autd_thread = AUTDThread()
 
         self.image_disp_w_h = 320
@@ -340,13 +340,13 @@ class MainWindow(QWidget):
 
         self.updateValues(_update_optimizer_flag=False)
         # connect its signal to the update_image slot
-        self.video_thread.change_pixmap_signal.connect(self.update_image)
+        # self.video_thread.change_pixmap_signal.connect(self.update_image)
         # start the thread
-        self.video_thread.start()
+        # self.video_thread.start()
         self.autd_thread.start()
 
     def closeEvent(self, event):
-        self.video_thread.stop()
+        # self.video_thread.stop()
         self.autd_thread.stop()
         event.accept()
 
