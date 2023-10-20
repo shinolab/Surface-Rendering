@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-21 17:01:53
+LastEditTime: 2023-10-20 15:56:39
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -13,7 +13,7 @@ from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
 from PyQt5 import QtGui
 from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
-from pyautd3 import AUTD3, Controller, Silencer, Synchronize, Stop
+from pyautd3 import AUTD3, Controller, Silencer, Stop
 from pyautd3.modulation import Fourier, Sine
 from datetime import timedelta
 import time

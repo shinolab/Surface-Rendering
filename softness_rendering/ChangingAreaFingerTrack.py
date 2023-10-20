@@ -2,14 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2022-11-22 22:42:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-16 16:46:33
+LastEditTime: 2023-10-20 15:54:09
 Copyright (c) 2022 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
-from pyautd3 import AUTD3, Controller, Geometry, SilencerConfig, Synchronize, Stop, DEVICE_WIDTH, DEVICE_HEIGHT
-from pyautd3.modulation import Static, Sine
+from pyautd3 import AUTD3, Controller, Silencer, Synchronize, Stop
+from pyautd3.modulation import Static
 import numpy as np
 import ctypes
 import platform
@@ -20,6 +20,7 @@ import mediapipe as mp
 import math
 from math import pi
 from multiprocessing import Process, Pipe
+from datetime import timedelta
 import time
 
 # use cpp to get high precision sleep time
@@ -29,18 +30,14 @@ libc = dll(os.path.dirname(__file__) + '/../cpp/' + platform.system().lower() + 
 W = 640
 H = 480
 
+DEVICE_WIDTH = AUTD3.device_width()
+DEVICE_HEIGHT = AUTD3.device_height()
+
 def on_lost(msg: ctypes.c_char_p):
     print(msg.decode('utf-8'), end="")
     os._exit(-1)
 
 def run(subscriber, publisher):
-    # Multiple AUTD
-    # The arrangement of the AUTDs:
-    # 1 → 2
-    #     ↓
-    # 4 ← 3
-    # (See from the upside)
-
     W_cos = math.cos(math.pi/12) * DEVICE_WIDTH
 
     on_lost_func = OnLostFunc(on_lost)
@@ -51,13 +48,10 @@ def run(subscriber, publisher):
         .add_device(AUTD3.from_euler_zyz([W_cos - (DEVICE_WIDTH - W_cos), -10 - 12.5, 0.], [pi, pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
         .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
-        .advanced_mode()
         # .open_with(Simulator(8080))
         .open_with(SOEM().with_on_lost(on_lost_func))
         # .open_with(TwinCAT())
     )
-
-    autd.send(Synchronize())
 
     print('================================== Firmware information ====================================')
     firm_info_list = autd.firmware_info_list()
@@ -68,7 +62,6 @@ def run(subscriber, publisher):
     center = autd.geometry.center + np.array([0., 0., 0.])
 
     m = Static()
-    # m = Sine(150)
 
     radius = 1.0    # radius of STM
     zero_radius = 1.0
@@ -79,7 +72,7 @@ def run(subscriber, publisher):
     x = 0.
     y = 0.
     zero_height = 200.
-    config = SilencerConfig()
+    config = Silencer()
     autd.send(config)
 
     print('press ctrl+c to finish...')
@@ -92,7 +85,7 @@ def run(subscriber, publisher):
             p = radius * np.array([np.cos(theta), np.sin(theta), 0])
             p += np.array([x, y, height])
             f = Focus(center + p)
-            autd.send((m, f))
+            autd.send((m, f), timeout=timedelta(milliseconds=0))
 
             # ... change the radius and height here
             if publisher.poll():
