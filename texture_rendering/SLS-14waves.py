@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-05 16:55:37
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-20 15:54:07
+LastEditTime: 2024-01-13 23:03:49
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QSlider, QVBoxLayout, QHBoxLa
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
 from PyQt5 import QtGui
-from pyautd3.link import TwinCAT, SOEM, Simulator, OnLostFunc
+from pyautd3.link import SOEM, Simulator, OnLostFunc
 from pyautd3.gain import Focus
 from pyautd3 import AUTD3, Controller, Silencer, Stop
 from pyautd3.modulation import Fourier, Sine
@@ -92,7 +92,7 @@ class AUTDThread(QThread):
         self._run_flag = True
 
         # initial parameters
-        self.coordinate = np.array([0., 0., 280.])
+        self.coordinate = np.array([0., 0., 210.])
         self.m = Sine(100)
 
         # import the HighPrecisionSleep() method
@@ -106,8 +106,8 @@ class AUTDThread(QThread):
         self.stm_f = SLS_para[0]
         self.radius = SLS_para[1]
 
-        self.m = Fourier()
-        for i in range(2, 16):
+        self.m = Fourier(Sine(freq=FREQUENCY_LIST[0]).with_amp(SLS_para[2]))
+        for i in range(3, 16):
             self.m.add_component(Sine(freq=FREQUENCY_LIST[i-2]).with_amp(SLS_para[i]))
     
     # slot function to accept coordinates
@@ -136,8 +136,8 @@ class AUTDThread(QThread):
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos),  12.5, 0.], [0., pi/12, 0.]))
             .add_device(AUTD3.from_euler_zyz([-W_cos + (DEVICE_WIDTH - W_cos), -DEVICE_HEIGHT - 12.5, 0.], [0., pi/12, 0.]))
             # .advanced_mode()
-            # .open_with(Simulator(8080))
-            .open_with(SOEM().with_on_lost(on_lost_func))
+            .open_with(Simulator(8080))
+            # .open_with(SOEM().with_on_lost(on_lost_func))
             # .open_with(TwinCAT())
         )
 
@@ -167,8 +167,8 @@ class AUTDThread(QThread):
                 x = self.coordinate[0]
                 y = self.coordinate[1]
                 # D435i depth start point: -4.2 mm
-                # the height difference between the transducer surface and the camera: 9 mm
-                height = self.coordinate[2] - 20 - 4.2
+                # the height difference between the transducer origin and the camera: 52 mm
+                height = self.coordinate[2] - 52 - 4.2
                 
                 # update the focus information
                 p = radius * np.array([np.cos(theta), np.sin(theta), 0])
@@ -216,27 +216,40 @@ class VideoThread(QThread):
             
             W = depth_frame.get_width()
             H = depth_frame.get_height()
-            # the height range: 0 ~ 23 cm
-            filter = rs.threshold_filter(min_dist=0, max_dist=0.23)
+            # the height range: 0 ~ 21 cm
+            filter = rs.threshold_filter(min_dist=0, max_dist=0.21)
             depth_frame = filter.process(depth_frame)
             depth_img = np.asanyarray(depth_frame.get_data())
             # the contact area, 100 x 100 pix
             depth_img = depth_img[int(H/2)-50:int(H/2)+50, int(W/2)-50:int(W/2)+50]
-
-            mass_x, mass_y = np.where(depth_img > 0)
-
-            # if no depth infomation, continue
-            if mass_x.size == 0 or mass_y.size == 0:
-                depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
-                self.change_pixmap_signal.emit(depth_img)
+            
+            # the avg height of 20 closest points
+            min_x, min_y = np.where(depth_img > 0)
+            if min_x.size == 0 or min_y.size == 0:
                 continue
-
+            
+            nonzero_indices = np.argwhere(depth_img != 0)
+            nonzero_values = depth_img[nonzero_indices[:, 0], nonzero_indices[:, 1]]
+            min_x, min_y = np.transpose(nonzero_indices[np.argsort(nonzero_values)[:20]])
             # mass_x and mass_y are the list of x indices and y indices of mass pixels
-            # calculate the centroid
-            cent_x = int(np.average(mass_x))
-            cent_y = int(np.average(mass_y))
-            # print(cent_x, cent_y)
+            cent_x = int(np.average(min_x))
+            cent_y = int(np.average(min_y))
             height = depth_img[cent_x, cent_y]
+
+            # # center of the depth image
+            # mass_x, mass_y = np.where(depth_img > 0)
+            # # if no depth infomation, continue
+            # if mass_x.size == 0 or mass_y.size == 0:
+            #     depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img), cv2.COLORMAP_JET)
+            #     self.change_pixmap_signal.emit(depth_img)
+            #     continue
+
+            # # mass_x and mass_y are the list of x indices and y indices of mass pixels
+            # # calculate the centroid
+            # cent_x = int(np.average(mass_x))
+            # cent_y = int(np.average(mass_y))
+            # # print(cent_x, cent_y)
+            # height = depth_img[cent_x, cent_y]
 
             # depth fov of D435i: 87° x 58°
             # rgb fov of D435i: 69° x 42°
