@@ -9,4 +9,4 @@
 
 A repository of mid-air surface texture and softness rendering using AUTD.
 
-The SLS texture rendering has been moved to https://github.com/shinolab/SLS-Texture-AUTD
+The SLS texture rendering has been moved to <https://github.com/shinolab/SLS-Texture-AUTD>
